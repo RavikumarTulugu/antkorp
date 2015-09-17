@@ -1,0 +1,526 @@
+--[[
+/****************************************************************
+ * Copyright (c) Neptunium Pvt Ltd., 2014.
+ * Author: Neptunium Pvt Ltd..
+ *
+ * This unpublished material is proprietary to Neptunium Pvt Ltd..
+ * All rights reserved. The methods and techniques described herein 
+ * are considered trade secrets and/or confidential. Reproduction or 
+ * distribution, in whole or in part, is forbidden except by express 
+ * written permission of Neptunium.
+ ****************************************************************/
+]]
+
+--[[
+FIXME: all the lists in the code follow set semantics only insert 
+item if not pre present.
+]]
+--require ('config');
+require ('mongo');
+local json = require ('cjson');
+require ('posix');
+require ('akorp_utils');
+require ('akorp_common');
+local lb = require ('luabridge'); 
+local stp = require ('stack_trace_plus');
+debug.traceback = stp.stacktrace;
+
+signature  = " akorp_rtc: ";
+clientid   = 0; 
+svcname    = "rtc";
+
+--[[
+send the message to all the participants in the list. 
+queue the message to all the participants incoming stream. 
+if the user is online mark it as checked and queue it to 
+the users incoming stream. 
+send it to the user using the sendtouser primitive.
+if the user is offline just queue it to the users incoming 
+stream.
+]]
+function
+handle_send(clientid, channelid, msg)
+info(string.format("Send request from user:%d", msg.uid));
+for i,uid in ipairs(msg.imsg.participants)
+do
+	--info(string.format("Sent to user:%d", uid));
+	local imevent = {};
+	imevent.imsg = {};
+	imevent.mesgtype    	  = "event";
+	imevent.eventtype   	  = "new_imsg";
+	imevent.imsg.sender		  = msg.uid;
+	imevent.imsg.sessionid    = msg.imsg.sessionid;
+	imevent.imsg.participants = listcopy(msg.imsg.participants);
+	imevent.imsg.timestamp 	  = msg.imsg.timestamp;
+	imevent.imsg.content      = msg.imsg.content;
+	local encbuf 			  = json.encode(imevent);
+	if encbuf then
+		if luabridge.getclientid(uid) then 
+			luabridge.send2user(uid, encbuf);
+		end
+	else
+		error(string.format("Failed to decode json string:%s", imevent));
+	end
+end
+return;
+end
+
+--[[
+Log the im object to the database for history purposes. 
+]]
+function
+handle_im_log(clientid, channelid, msg)
+info(string.format("imlog from user:%d", msg.uid));
+local imlog = im_log_object.new();
+if not imlog then
+    error("Unable to log im, memory allocation failure ");
+    return;
+end
+imlog.originator   = msg.uid;
+imlog.participants = listcopy(msg.imsg.participants);
+imlog.timestamp    = msg.imsg.timestamp;
+imlog.content      = msg.imsg.content;
+for i,uid in ipairs(msg.imsg.participants) do
+    if luabridge.getclientid(uid) ~= 0 then
+        imlog.checked[uid] = true;
+    else
+        imlog.checked[uid] = false;
+    end
+end
+local ok, err = db:insert(akorp_im_ns(), imlog);
+if not ok and err then
+    error(string.format("There was an error :%s logging the im", err));
+end
+return;
+end
+
+--[[
+handle a call request from one user to another. 
+]]
+function
+handle_call(clientid, channelid, msg)
+info(string.format("Call request from user %d to user %d ", msg.call.caller, msg.call.callee));
+local callMsg = {};
+callMsg.call = {};
+callMsg.mesgtype 	  	= msg.mesgtype;
+callMsg.request		    = msg.request;
+callMsg.call.caller     = msg.call.caller;
+callMsg.call.callee     = msg.call.callee;
+callMsg.call.audioonly  = msg.call.audioonly;
+local encbuf 			= json.encode(callMsg);
+if encbuf then
+	luabridge.send2user(msg.call.callee, encbuf);
+else 
+	error(string.format("Failed to decode json string:%s", callMsg));
+end
+info(encbuf);
+return;
+end
+
+--[[
+handle offer.
+]]
+function
+handle_offer(clientid, channelid, msg)
+info(string.format("Call request from user %d to user %d ", msg.offer.sndr, msg.offer.rcpt));
+local offerMsg = {};
+offerMsg.offer = {};
+--offerMsg.cookie 		= msg.cookie;
+offerMsg.mesgtype 	  	= msg.mesgtype;
+offerMsg.request		= msg.request;
+offerMsg.offer.sndr 	= msg.offer.sndr; 
+offerMsg.offer.rcpt 	= msg.offer.rcpt;
+offerMsg.offer.media    = msg.offer.media;
+offerMsg.offer.jsepdata = listcopy(msg.offer.jsepdata);
+local encbuf 			= json.encode(offerMsg);
+if encbuf then
+	luabridge.send2user(msg.offer.rcpt, encbuf);
+else 
+	error(string.format("Failed to decode json string:%s", offerMsg));
+end
+info("call jsep data");
+info(encbuf);
+return;
+end
+
+--[[
+User left the call.
+]]
+function
+handle_bye(clientid, channelid, bye1)
+info(string.format("Bye from user %d to user %d", bye1.sndr, bye1.rcpt));
+local bye2 = {};
+bye2.mesgtype = "event";
+bye2.eventtype = "bye";
+bye2.sndr = bye1.sndr;
+bye2.rcpt = bye1.rcpt;
+local encbuf = json.encode(bye2);
+if encbuf then
+	luabridge.send2user(bye1.rcpt, encbuf);
+else
+	error(string.format("Failed to decode json string:%s", encbuf));
+end
+return;
+end
+
+--[[
+handle a pickup response from one user to another. 
+]]
+function
+handle_pickup(clientid, channelid, msg)
+info(string.format("Pickup message from user %d to user %d ", msg.pickup.callee, msg.pickup.caller));
+local pickupMsg = {};
+pickupMsg.pickup = {};
+pickupMsg.mesgtype 	      = msg.mesgtype;
+pickupMsg.response		  = msg.response;
+pickupMsg.pickup.callee   = msg.pickup.callee; 
+pickupMsg.pickup.caller   = msg.pickup.caller;
+pickupMsg.pickup.audioonly = msg.pickup.audioonly;
+local encbuf 			  = json.encode(pickupMsg);
+if encbuf then
+	luabridge.send2user(msg.pickup.caller, encbuf);
+else
+	error(string.format("Failed to decode json string:%s", pickupMsg));
+end
+info(encbuf);
+return;
+end
+
+--[[
+send answer for data channel creation to work.
+]]
+function
+handle_answer(clientid, channelid, msg)
+info(string.format("Pickup message from user %d to user %d ", msg.answer.sndr, msg.answer.rcpt));
+local answerMsg = {};
+answerMsg.answer = {};
+--answerMsg.cookie		  = msg.cookie;
+answerMsg.mesgtype 	      = msg.mesgtype;
+answerMsg.response		  = msg.response;
+answerMsg.answer.sndr     = msg.answer.sndr; 
+answerMsg.answer.rcpt     = msg.answer.rcpt;
+answerMsg.answer.media    = msg.answer.media;
+answerMsg.answer.jsepdata = listcopy(msg.answer.jsepdata);
+local encbuf 			  = json.encode(answerMsg);
+if encbuf then 
+	luabridge.send2user(msg.answer.rcpt, encbuf);
+else
+	error(string.format("Failed to decode json string:%s", answerMsg));
+end 
+info("pickup jsep data");
+info(encbuf);
+return;
+end
+
+--[[
+Call dropped by user. 
+]]
+function
+handle_drop(clientid, channelid, msg)
+info(string.format("Drop message from user %d to user %d ", msg.sndr, msg.rcpt));
+local dropEvt = {};
+dropEvt.mesgtype 	      = "event";
+dropEvt.eventtype 		  = "drop";
+dropEvt.sndr			  = msg.sndr;
+dropEvt.rcpt     		  = msg.rcpt;
+dropEvt.reason 			  = msg.reason;
+local encbuf 			  = json.encode(dropEvt);
+if encbuf then 
+	luabridge.send2user(msg.rcpt, encbuf);
+else
+	error(string.format("Failed to decode json string:%s", dropEvt));
+end 
+return;
+end
+
+--[[
+exchange a candobj message from one user to another. 
+]]
+function 
+handle_candidate(clientid, channelid, msg)
+info(string.format("Candidate message from user %d to user %d ", msg.candobj.sndr, msg.candobj.rcpt));
+local candidateMsg = {};
+candidateMsg.candobj = {};
+--candidateMsg.cookie			  = msg.cookie;
+candidateMsg.mesgtype 	   	= msg.mesgtype; 
+candidateMsg.eventtype 		= msg.eventtype; 
+candidateMsg.candobj.sndr   = msg.candobj.sndr; 
+candidateMsg.candobj.rcpt   = msg.candobj.rcpt;
+candidateMsg.candobj.label  = msg.candobj.label;
+candidateMsg.candobj.cand   = msg.candobj.cand;
+local encbuf 			  	  = json.encode(candidateMsg);
+if encbuf then 
+	info("send json:");
+	info(encbuf);
+	luabridge.send2user(msg.candobj.rcpt, encbuf);
+else
+	error(string.format("Failed to decode json string:%s", candidateMsg));
+end
+return;
+end
+
+--[[ 
+send the invite to the user intended if the user is online. if not 
+send back an error to the sender.
+]] 
+function
+handle_text_con_invite(clientid, channelid, msg)
+local invite_event = {};
+invite_event.invite = {};
+info(string.format("Text con invite from user: %d to user: %d", msg.invite.inviter, msg.invite.invitee));
+invite_event.mesgtype 		  = "event";
+invite_event.eventtype 	      = "text_con_invite";
+invite_event.invite.sessionid = msg.invite.sessionid;
+invite_event.invite.inviter	  = msg.invite.inviter;
+invite_event.invite.invitee	  = msg.invite.invitee;
+invite_event.invite.desc	  = msg.invite.desc;
+invite_event.invite.participants = listcopy(msg.invite.participants);
+local encbuf 			  	  = json.encode(invite_event);
+if encbuf then
+	if luabridge.getclientid(msg.invite.invitee) then
+		luabridge.send2user(msg.invite.invitee, encbuf);
+	else
+		error(string.format("Conference invitee :%d offline", msg.invite.invitee));
+	end
+else
+	error(string.format("Failed to decode json string:%s", invite_event));
+end
+return;
+end
+
+--[[
+The invitee has responded to the invite and we need to inform the same
+to the inviter who is waiting.
+]]
+function
+handle_text_con_invite_accept(clientid, channelid, msg)
+local accept_resp = {};
+accept_resp.accept = {};
+info(string.format("Text con accept from user: %d to user: %d", msg.accept.invitee, msg.accept.inviter));
+accept_resp.mesgtype 			= "response";
+accept_resp.response 			= "text_con_invite_accept";
+accept_resp.accept.inviter 		=  msg.accept.inviter;
+accept_resp.accept.invitee 		=  msg.accept.invitee;
+accept_resp.accept.accepted		=  msg.accept.accepted;
+accept_resp.accept.sessionid	=  msg.accept.sessionid;
+accept_resp.accept.reason	    =  msg.accept.reason;
+accept_resp.accept.participants =  listcopy(msg.accept.participants);
+local encbuf = json.encode(accept_resp);
+if encbuf then
+	if luabridge.getclientid(msg.accept.inviter) then
+		luabridge.send2user(msg.accept.inviter, encbuf);
+		if msg.accept.accepted == true then
+		info("Join event broadcasted to audience");
+			for i,uid in ipairs(msg.accept.participants) do
+				if luabridge.getclientid(uid) ~= 0 then
+					local join_event = {};
+					join_event.join = {};
+					join_event.mesgtype   		 = "event";
+					join_event.eventtype 		 = "user_join_text_con";
+					join_event.join.sessionid 	 = msg.accept.sessionid;
+					join_event.join.inviter 	 = msg.accept.inviter;
+					join_event.join.invitee   	 = msg.accept.invitee;
+					join_event.join.participants = listcopy(msg.accept.participants);
+					luabridge.send2user(uid, json.encode(join_event));
+				end
+			end
+		end
+	else
+		error(string.format("Conference inviter :%d offline", msg.accept.inviter));
+	end
+else
+	error(string.format("Failed to decode json string:%s", accept_resp));
+end
+return;
+end
+
+--[[
+replay the im log to the user every message has a field called "checked".
+mark checked false as true after relaying them to the user.
+]]
+function
+handle_replay_log(clientid, channelid, msg)
+local limit = 10;
+local querystr = "";
+if msg.marker then
+    querystr = "{$query:{$and:[{participants:{$in:[".. msg.from .. "]}}, {participants:{$in:[".. msg.uid .. "]}}], timestamp:{$lt:".. msg.marker .. "}}, $orderby:{timestamp : -1}}";
+else
+    querystr = "{$query:{$and:[{participants:{$in:[".. msg.from .. "]}}, {participants:{$in:[".. msg.uid .. "]}}]}, $orderby:{timestamp : -1}}";
+end
+--info(querystr);
+local q = db:query(akorp_im_ns(), querystr, limit);
+for result in q:results() do
+    local response = {};
+    response.mesgtype                = "response"; 
+    response.cookie                  = msg.cookie;
+    response.result                  = {};
+    response.result.sender           = result.originator;
+    response.result.timestamp        = result.timestamp;
+    response.result.content          = result.content;
+    response.result.participants     = listcopy(result.participants);
+    if result.checked[tostring(msg.uid)] == true then
+        response.result.checked      = true;
+    else
+        response.result.checked      = false;
+    end
+    local encbuf = json.encode(response);
+    if encbuf then
+        luabridge.send2user(msg.uid, encbuf);
+        if result.checked[tostring(msg.uid)] == false then
+           result.checked[tostring(msg.uid)] = true;
+           local qstr = "{\"_id\": ObjectId(\"".. result._id[1] .."\")}";
+           --[[
+           local obj = db:find_one(akorp_im_ns(), qstr);
+           if obj then 
+                info("object found query works");
+           else 
+                error("booooooh query dusnt work: ", qstr);
+           end
+           ]]
+           local ok, err = db:update(akorp_im_ns(), qstr, result, false, false);
+           if not ok and err then
+                error(string.format("Unable to update the checked status in db, err=%s", err));
+           end
+        end
+    else
+        error("failed to encode the message ");
+    end
+    --info(encbuf);
+end
+return;
+end
+
+function
+handle_data(clientid, channelid, data)
+--info("new data message for rtc.");
+--info(data);
+local msg = json.decode(data);
+if msg then 
+    handle_rtc_mesg(clientid, channelid, msg);
+else
+    error(string.format("Unable to decode incoming msg."));
+end 
+return;
+end
+
+function
+handle_control(msg)
+info("recvd control message");
+if msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_ARRIVAL then
+    info(string.format("client arrival: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_DEPARTURE then 
+    info(string.format("client departure: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_ADD then 
+    info(string.format("channel add: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_DELETE then
+    info(string.format("channel delete: %d %d", msg.clientid, msg.channelid));
+end
+return;
+end
+
+function
+handle_signal(sig)
+info("recvd termination signal exiting ...");
+os.exit(0);
+end
+
+--[[
+relay offline messages for the user requested. 
+]]
+function 
+handle_get_offline(clientid, channelid, data)
+info("get offline message");
+return;
+end
+
+--[[
+handle the message from the client while sending back the response 
+use the same client id we recvd from the client.
+]]
+function
+handle_rtc_mesg(clientid, channelid, msg)
+--[[
+we have just one thing to do is to send the incoming message to all 
+the intended recipients.
+]]
+if msg.request 	   == "send_imsg" then handle_send(clientid, channelid, msg);
+elseif msg.request == "im_log" then handle_im_log(clientid, channelid, msg);
+elseif msg.request == "replay_log" then handle_replay_log(clientid, channelid, msg);
+elseif msg.request == "text_con_invite" then handle_text_con_invite(clientid, channelid, msg);
+elseif msg.request == "text_con_invite_accept" then handle_text_con_invite_accept(clientid, channelid, msg);
+elseif msg.request == "offer" then handle_offer(clientid, channelid, msg);
+elseif msg.request == "call" then handle_call(clientid, channelid, msg);
+elseif msg.request == "bye" then handle_bye(clientid, channelid, msg);
+elseif msg.response == "pickup" then handle_pickup(clientid, channelid, msg);
+elseif msg.response == "answer" then handle_answer(clientid, channelid, msg);
+elseif msg.response == "drop" then handle_drop(clientid, channelid, msg);
+elseif msg.eventtype == "candidate_event" then handle_candidate(clientid, channelid, msg);
+elseif msg.eventtype == "get_offline" then handle_get_offline(clientid, channelid, msg);
+else
+	error(string.format("Unable to interpret mesg:%s", msg));
+end
+return;
+end
+
+function
+dumpconfig()
+trace("Configuration dump ...");
+trace("----------------------");
+trace("mongo_server_addr:  ", mongo_server_addr);
+trace("log_file:  ", log_file);
+trace("debug_level:  ", debug_level);
+return;
+end
+
+--[[
+read the configuration and populate the variables. 
+]]
+function
+readconfig()
+mongo_server_addr = lb.getstrconfig("system.mongo_server_address");
+log_file = lb.getstrconfig("rtc.log_file");
+debug_level = lb.getstrconfig("rtc.debug_level");
+return;
+end
+
+function
+rtc_server_main(arg)
+posix.sleep(3);
+lb.daemonize();
+lb.setlevel(LOG_TRACE); --make this configurable 
+lb.loadconfig("/etc/antkorp/antkorp.cfg");
+readconfig();
+dumpconfig();
+posix.syslog(LOG_INFO, string.format("akorp rtc server started booting"));
+local rc = lb.openlog(log_file);
+	if not rc then
+	posix.syslog(LOG_ERROR, string.format("Unable to open log file exiting"));
+	return;
+end
+if debug_level == "info" then log_level = LOG_INFO;
+elseif debug_level == "warning" then log_level = LOG_WARNING;
+elseif debug_level == "error" then log_level = LOG_ERROR; 
+elseif debug_level == "fatal" then log_level = LOG_FATAL;
+elseif debug_level == "trace" then log_level = LOG_TRACE;
+elseif debug_level == "debug" then log_level = LOG_DEBUG;
+end
+lb.setlevel(log_level); --make this configurable 
+info("Logger module initialized");
+db = assert(mongo.Connection.New());
+assert(db:connect(mongo_server_addr));
+info("Connected to the mongodb");
+info("akorp rtc server booted successfully");
+local estr = luabridge.createservice("rtc");
+if estr then
+	info(string.format("Failed to register with the network gateway:%s", estr));
+    return;
+end
+    luabridge.setdatarecvhandler(handle_data);
+    luabridge.setcontrolrecvhandler(handle_control);
+    luabridge.setsignalhandler(handle_signal);
+    local estr = luabridge.run(); -- we never return from here until we call lb.stop().
+    error(estr);
+    return;
+end
+
+rtc_server_main(arg);

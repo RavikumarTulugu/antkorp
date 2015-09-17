@@ -1,0 +1,4 @@
+#!/usr/bin/env bash 
+#---------------------
+#Backup script to take backup of mongodb data and file system. 
+exit 0;

@@ -1,0 +1,15 @@
+{
+  "name": "webodf",
+  "homepage": "https://github.com/kogmbh/WebODF",
+  "version": "0.4.2",
+  "_release": "0.4.2",
+  "_resolution": {
+    "type": "version",
+    "tag": "v0.4.2",
+    "commit": "b1dcb53bc14e2980b1f88851e11e95cbb12d7ede"
+  },
+  "_source": "git://github.com/kogmbh/WebODF.git",
+  "_target": "~0.4.2",
+  "_originalSource": "webodf",
+  "_direct": true
+}

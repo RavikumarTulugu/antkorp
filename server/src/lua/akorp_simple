@@ -1,0 +1,112 @@
+--[[
+/****************************************************************
+ * Copyright (c) Neptunium Pvt Ltd., 2014.
+ * Author: Neptunium Pvt Ltd..
+ *
+ * This unpublished material is proprietary to Neptunium Pvt Ltd..
+ * All rights reserved. The methods and techniques described herein 
+ * are considered trade secrets and/or confidential. Reproduction or 
+ * distribution, in whole or in part, is forbidden except by express 
+ * written permission of Neptunium.
+ ****************************************************************/
+]]
+
+require ('os')
+json = require ('cjson')
+require ('posix')
+--require ('config')
+require ('akorp_utils')
+require ('akorp_common')
+stp = require ('stack_trace_plus');
+debug.traceback = stp.stacktrace;
+lb = require ('luabridge')
+signature   = " akorp_simple: ";
+
+function
+handle_data(clientid, channelid, data)
+info("recvd ping");
+local msg = json.decode(data);
+if (msg.request == "ping") then
+    local resp = {};
+    resp.response = "pong";
+    resp.text     = "pong response from simple service";
+    lb.send2client(clientid, channelid, json.encode(resp));
+    info("sent pong");
+    
+    resp = {};
+    resp.response = "broadcast";
+    resp.text = "This is a broadcast from simple service.";
+    lb.broadcast(json.encode(resp));
+    info("sent broadcast");
+end
+return;
+end
+
+function
+handle_control(msg)
+info("recvd control message");
+if msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_ARRIVAL then
+    info(string.format("client arrival: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_DEPARTURE then 
+    info(string.format("client departure: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_ADD then 
+    info(string.format("channel add: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_DELETE then
+    info(string.format("channel delete: %d %d", msg.clientid, msg.channelid));
+end
+return;
+end
+
+function 
+one_shot_timer_callback(cookie)
+info("one shot timer fired : ", cookie);
+lb.deletetimer(cookie);
+return;
+end
+
+periodic_count = 0;
+function 
+periodic_timer_callback(cookie)
+info("periodic timer fired : ", cookie);
+periodic_count = periodic_count + 1;
+if periodic_count == 5 then 
+    info("canceling periodic timer");
+    lb.stoptimer(cookie);
+    lb.deletetimer(cookie);
+end
+return;
+end
+
+function 
+signal_handler(sig)
+info("recvd signal exiting ...");
+os.exit(0);
+end
+
+function
+simple_server_main(arg)
+lb.daemonize();
+posix.sleep(3);
+if not lb.openlog("/var/log/antkorp/simple") then
+    info("Unable to open log file. exiting..");
+    posix.syslog(LOG_ERROR, string.format("Unable to open log file exiting"));
+    return;
+end
+lb.setlevel(LOG_TRACE); --make this configurable 
+local estr = lb.createservice("simple");
+if estr then
+	info(string.format("Failed to register with the network gateway:%s", estr));
+    return;
+end
+    lb.setdatarecvhandler(handle_data);
+    lb.setcontrolrecvhandler(handle_control);
+    lb.setsignalhandler(signal_handler);
+    lb.addoneshottimer("simple", 5000, one_shot_timer_callback);
+    lb.addperiodictimer("periodic", 1000, periodic_timer_callback); 
+    info("waiting on loop forever.");
+    local estr = lb.run(); -- we never return from here until we call lb.stop().
+    info(estr);
+    return;
+end
+
+simple_server_main(arg);

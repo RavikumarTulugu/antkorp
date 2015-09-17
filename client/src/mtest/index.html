@@ -1,0 +1,1758 @@
+<!DOCTYPE HTML>
+
+<html itemscope itemtype="http://schema.org/Product">
+	<head>
+		<title>Neptunium Enterprise Collaboration and Communication Tool Demo</title>
+
+		<meta name="description" content="Neptunium is Enterprise Collaboration and Communication Tool which is made with latest technologies like HTML5,etc. Here your it is a demo of alpha version of product." />
+		<meta name="keywords" content="web based file manager, antkorp ,antkorp demo, antkorp product, Enterprise apps" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta http-equiv="expires" content="0">
+		<meta http-equiv='Pragma' content='no-cache'>
+		<meta http-equiv='Cache-Control' content='no-cache'>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+		<!-- product specific tags-->
+		<meta name='copyright' content='Neptunium'>
+		<meta name="author" content="Neptunium">
+
+		<!--  opengraph tags -->
+		<meta property=”og:title” content=”Neptunium Enterprise Collaboration and Communication Tool Demo”/>
+		<meta property=”og:type” content=”Web Application”/>
+		<meta property=”og:image” content=”http://www.antkorp.in/group.png”/>
+		<meta property=”og:url” content=”http://www.antkorp.in/mtest”/>
+		<meta property=”og:description” content=”Neptunium is Enterprise Collaboration and Communication Tool which is made with latest technologies like HTML5,etc. Here your it is a demo of alpha version of product.”/>
+
+		<!-- HTML5 item tags -->
+		<meta itemprop="name" content="antkorp">
+		<meta itemprop="description" content="Neptunium is a real time enterprise colloboration and communication platform built with HTML5.">
+		<meta itemprop="image" content="http://www.antkorp.in/group.png">
+
+		<link rel=”author” href=”https://plus.google.com/u/0/115310382888220784299“/>
+		<link rel=”publisher” href=”https://plus.google.com/u/0/115310382888220784299“/>
+
+		<link  rel="import" href="js/templates.html" />
+
+		<!--
+		<link  rel="stylesheet" href="css/style.css"/>
+		<link  rel="stylesheet" href="css/jqx.base.css"  />
+		<link  rel="stylesheet" href="css/jquery-ui-1.10.1.custom.min.css"/>
+		<link  rel="stylesheet" href="css/jquery.percentageloader-01a.css"  />
+		<link  rel="stylesheet" href="css/jquery.Jcrop.css" />
+		<link  rel='stylesheet' href='css/fullcalendar.css' />
+		<link  rel="stylesheet" href="css/jquery.tagsinput.css" />
+		<link rel="stylesheet" href="css/jquery.steps.css" />
+		<link  rel="stylesheet" href="css/bootstrap.min.css" />
+		<link  rel="stylesheet" href="css/bootstrap-responsive.min.css" />
+		<link rel="stylesheet" href="css/akorp-bootstrap.css" />
+		<!--<link rel="stylesheet" href="css/flat-ui.css" />-->
+		<link  rel="stylesheet" href="css/akorp.css" />
+
+	</head>
+	<body>
+		<div class="row-fluid akp-app ">
+			<header class="topbar  navbar navbar-fixed-top akorp-ui">
+				<div class="navbar-inner">
+					<div class="container">
+						<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse"> <span class="icon-bar"></span> <span class="icon-bar"></span> <span class="icon-bar"></span> </a>
+
+						<div class="main_title brand">
+							antkorp
+						</div>
+
+						<div id="main_menu" class="navigation   nav-collapse collapse ">
+							<nav>
+								<ul id='menu' class="nav pull-left">
+									<li data-tabId="container"  class="appTab mt-menu vault-tab">
+										<a href="#container"><span class="tab-icon icon-folder"></span></a>
+										<span class="notify-no" >0</span>
+									</li >
+									<li data-tabId="kons" class="mt-menu appTab kons-tab">
+										<a><span class="tab-icon icon-chat"></span></a>
+										<span class="notify-no" >0</span>
+										<div class="notifications-pane">
+											<div class="notifications-title akorp-header palegreen">
+												<span>Notifications</span>
+												<button class="check-all">
+													Mark all Read
+												</button>
+											</div>
+											<div class="notifications-list">
+
+											</div>
+										</div>
+									</li>
+									<li data-tabId="planner" class="mt-menu appTab calendar-tab">
+										<a><span class="tab-icon icon-calendar"></span></a>
+										<span class="notify-no">0</span>
+									</li>
+									<li data-tabId="dashboard" title="Dashboard" class="appTab dahsboard-tab">
+										<a><span class="tab-icon icon-address-book-2"></span></a>
+										<!--<span class="notify-no" title="notifications">3</span>-->
+									</li>
+								</ul>
+							</nav>
+							<ul class="userModule nav pull-right"  style="display: none;">
+
+								<li class="appNav">
+									<div class="showGroupsSection">
+										<a href="#groupSection"><span class="icon-users-2"></span></a>
+									</div>
+								</li>
+
+								<li class="appNav group-status">
+									<div class="groupSwitch dropdown">
+										<a class="dropdown-toggle" data-toggle="dropdown" href="#"> <span class="groupTitle firstCap"></span> <span class="icon-angle-down"></span></a>
+										<ul class="dropdown-menu groups-list pull-left" role="menu" aria-labelledby="dLabel"></ul>
+									</div>
+									<div class="switchToGroups">
+										<a href ="#groupSection"><span class="icon-arrow " title="Groups"></span></a>
+									</div>
+								</li>
+
+								<!--<li class="appNav">
+								<div>
+								<span class="icon-comment"></span>
+								</div>
+								</li> -->
+								<li class="appNav shareKons" style="display: none;">
+									<span class="shareKons_btn">Share</span>
+									<div class="globalShare" data-loaded="false" style="display: none;">
+										<div class="globalKonsEntry"></div>
+									</div>
+								</li>
+
+								<li class="login-status appNav">
+
+									<div id="userinfo" class="pull-left">
+										<span class="activeUserPic"  > <img id="activeuserimg" src="css/images/user32.png" alt="you" width="32" height="32"  class="img-rounded" ></span>
+
+										<span id="uname" title="Change Profile">User </span>
+
+									</div>
+									<div class="stts_menu pull-left">
+										<span class="stts_msg" data-stts="available" data-toggle="dropdown"></span>
+										<ul id="status_opts" class="dropdown-menu akp" role="menu" aria-labelledby="dLabel">
+											<li  data-opt="available" class="status_opt">
+												Available
+											</li>
+											<li  data-opt="invisible"  class="status_opt">
+												Invisible
+											</li>
+											<!--
+											<li  data-opt="away"  class="status_opt">
+											Away
+											</li>
+											-->
+											<li  data-opt="donotdisturb"  class="status_opt devider">
+												Do not Disturb
+											</li>
+
+											<li data-opt="custom" class="status_opt status_custom disabled" >
+												<!--<input type="text" placeholder="Custom message" name="custom_msg" class="input-medium status_input"/>-->
+												Custom message...
+											</li>
+
+										</ul>
+
+									</div>
+
+								</li>
+								
+							
+								<li class="appNav adminCog">
+									<div class="showAdminSection">
+										<a href="#adminSection"> <span class="icon-cog"></span></a>
+									</div>
+								</li>
+							
+								
+								<li class="appNav">
+									<div class="usignout">
+										<span id="sobtn" class="icon-switch" title="Logout"></span>
+									</div>
+								</li>
+
+							</ul>
+						</div>
+
+					</div>
+				</div>
+
+			</header>
+
+			<!-- Admin Wizard  -->
+			<div class="container wizardContainer" style="display: none;">
+				<div class="row-fluid">
+
+					<div class="span6 offset3">
+						<div class="firstEntryWizard" id="cmpnyEntryWizard" style="margin-top: 100px;">
+							<h3>Organization</h3>
+							<section class="" style="padding-top: 20px;">
+
+								<form class="form-horizontal" id="orgCreateForm">
+									<fieldset>
+
+										<!-- Form Name --
+										<legend></legend>-->
+										<div class="alert alert-error orgCreateFormError" style="display: none;">
+
+											Please fill all fields correctly to proceed.
+
+										</div>
+
+										<!-- Text input-->
+										<div class="control-group">
+											<label class="control-label" for="cmpnyName">Organisation*</label>
+											<div class="controls">
+												<input id="cmpnyName" pattern="[A-z0-9]{4,}" name="cmpnyName" type="text" placeholder="XYZ Company" class="input-medium" required="required">
+												<p class="help-block">
+
+												</p>
+											</div>
+										</div>
+										<p>
+											* - must fill these fields.
+											<br />
+											Should be minimum 4 charecters.
+											<br />
+											Only Alphanumerics are allowed.
+										</p>
+
+									</fieldset>
+								</form>
+
+							</section>
+							<h3>Your Account</h3>
+							<section>
+								<form class="form-horizontal" id="userCreateForm">
+									<fieldset>
+
+										<!-- Form Name --
+										<legend></legend>
+
+										<!-- Text input-->
+										<div class="control-group userCreateFormError" style="display: none;">
+											<div class=" alert alert-error">
+												Please fill all fields correctly to proceed.
+											</div>
+										</div>
+
+										<div class="control-group">
+											<label class="control-label" for="name">Name*</label>
+											<div class="controls">
+												<input id="user_name"  pattern="[A-z0-9 ]{4,}" name="name" type="text" placeholder="Your Name" class="input-large" required="">
+
+											</div>
+										</div>
+
+										<!-- Password input-->
+										<div class="control-group">
+											<label class="control-label" for="password">Password*</label>
+											<div class="controls">
+												<input id="user_password"  pattern="[A-z0-9]{4,}" name="usr_password" type="password" placeholder="" class="input-large" required="">
+
+											</div>
+										</div>
+
+										<!-- Password input-->
+										<div class="control-group">
+											<label class="control-label" for="cpassword">Confirm Password*</label>
+											<div class="controls">
+												<input id="user_cpassword"  pattern="[A-z0-9]{4,}" name="usr_password_confirm" type="password" placeholder="" class="input-large" required="">
+
+											</div>
+										</div>
+
+										<p>
+											* - must fill these fields.
+											<br />
+											Should be minimum 4 charecters.
+											<br />
+											Only Alphanumerics are allowed.
+										</p>
+
+									</fieldset>
+								</form>
+							</section>
+							<h3>Finish</h3>
+							<section>
+								<p class="alert alert-success">
+									Thank you! You have successfully logged in.
+								</p>
+							</section>
+
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- End of Admin Wizard -->
+			<div class="appContainer">
+
+				<!-- Contact list Sidebar -->
+				<aside id="contactList" class="clbar akorp-ui">
+					<div class="contactsearch akorp-ui">
+						<input type="text"  id="cnsearch" name="clistsearch"  class="csearchbox "  placeholder="Search" style="width: 70px;"/>
+					</div>
+					<div class="clist akorp-ui" >
+
+					</div>
+				</aside>
+
+				<!-- Content of the whole app -->
+				<div id='content' class="content akorp-ui">
+
+					<section id="welcomeSection" class="container welcm-bd">
+						<header class="welcm-user">
+							<div class="active-img">
+								<img alt="user" height=96 width=96 src=""  class="" />
+							</div>
+							<div>
+								<h1>Welcome</h1>
+								<h1 class="active-name"></h1>
+							</div>
+
+						</header>
+						<div class="row-fluid">
+							<div class="profile-incomplete app-ui-widget blue span4">
+								<h2 class="dilaog_title">Complete your profile</h2>
+
+								<div class="missed">
+									<h1>Where do you live?</h1>
+									<h2>Add your address to profile.</h2>
+								</div>
+								<div class="completeness">
+									<div style="width:30%; background:#FFF;"></div>
+								</div>
+								<div>
+									<button class="btn-white">
+										Add Location
+									</button>
+								</div>
+							</div>
+							<div class="app-ui-widget brinjal span4">
+								<div class="app-ui-widget-line">
+									<span class="line-nmbr">2</span> Notifications
+								</div>
+								<div class="app-ui-widget-icon">
+									<span class="icon-folder"></span>
+								</div>
+							</div>
+							<div class="app-ui-widget yellow span4">
+								<div class="app-ui-widget-line">
+									<span class="line-nmbr">5</span> New Events
+								</div>
+								<div class="app-ui-widget-icon">
+									<span class="icon-calendar-2"></span>
+								</div>
+							</div>
+
+						</div>
+					</section>
+
+					<section class="gtkViewer appModule" id="gtk-vwr">
+						<iframe src="gtkViewer.html" id="gtk-vwr-frame"  sandbox="allow-scripts allow-top-navigation allow-same-origin"></iframe>
+					</section>
+
+					<section class="container viewer-screen appModule" id="pdf-vwr">
+
+						<iframe src="viewer.html" id="pdf-vwr-frame"   sandbox="allow-scripts allow-top-navigation allow-same-origin"></iframe>
+
+					</section>
+
+					<section id='container' class='container fmgr appModule'  oncontextmenu="return false;">
+						<div id='header' class='menubar row-fluid'>
+							<div class="searchbar span3" style="float: left">
+								<input type="search" id="fmgrSearchBox" placeholder="Search" class="searchbox" maxlength="25"/>
+								<span class="searchbtn" id="fmgrSearchBtn"></span>
+								<div class="searchResults akp"></div>
+							</div>
+							<div class=" vaultPath span5">
+								<ul class="breadcrumb pathdirs">
+
+								</ul>
+
+							</div>
+
+							<div class="toolbar span4">
+								<!--
+								<button class="btn btn-icon blue icon-remove ui-menu_item fmgr-trash">
+
+								</button>
+								
+								<button id="dirStats" class="ui-menu_item btn btn-primary btn-icon pull-right">
+									<span class="ui-image-icon icon-cog"></span>
+								</button>
+-->
+								<div class="ui-menu_item-set fmgr-bookmarkbar">
+									<div class="btn-set fmgr-bmbtns">
+										<button class="btn btn-primary blue btn-icon  fmgr-add-bookmark">
+											<!--<span class="icon-star"></span> -->
+										</button>
+										<button class="btn btn-primary blue btn-small fmgr-bookmark-list dropdown-toggle" data-toggle="dropdown">
+											<span class="icon-caret-down"></span>
+										</button>
+									</div>
+
+									<div class="fmgr-bm-listPanel" data-loaded="true"  >
+										<ul class="bm-list">
+
+										</ul>
+									</div>
+
+								</div>
+
+								<button id="home_folder" class="ui-menu_item btn btn-icon btn-primary blue pull-right" >
+									<span class="ui-image-icon home  icon-home  "></span>
+
+								</button>
+
+								<!--
+								<div id="gettree" class="ui-menu_item " title="Tree View">
+								<span class="ui-image-icon gettree icon-tree"></span>
+
+								</div>
+								-->
+
+								<button id='parent' class="ui-menu_item btn btn-icon btn-primary blue pull-right" >
+									<span class="ui-image-icon parent icon-arrow-up"></span>
+								</button>
+
+								<button id='refresh' class="ui-menu_item btn btn-icon btn-primary blue pull-right" title="Refresh">
+									<span class="ui-image-icon refresh icon-loop"></span>
+								</button>
+
+								<button id="add_fldr" class="ui-menu_item btn btn-icon btn-primary blue pull-right" title="New Folder">
+									<span class="ui-image-icon add_fldr icon-folder"></span>
+
+								</button>
+								
+								<button id="upload_btn" class="ui-menu_item btn btn-icon btn-primary blue pull-right" title="Upload">
+									<span class="icon-upload-2"></span>
+								</button>
+								
+								<input type="file" id="upload_input" multiple  style="visibility: hidden; height: 0px; width: 0px;"/>
+								
+								<div class=" btn-group pull-right" style="margin-right: 5px;">
+
+									<button id="phome" class="btn btn-primary btn-active active" title="Private Folder" data-currenthome="phome" >
+										<span class=" ghome icon-user-4"></span>
+
+									</button>
+									<button id="ghome" class="btn btn-primary " title="Group Folder" data-currenthome="phome" >
+										<span class=" ghome icon-users-2"></span>
+
+									</button>
+								</div>
+							</div>
+
+						</div>
+						<div id="workzone" class="vault" >
+							<div id='nodes' >
+
+								<ul>
+									<li id='home'>
+										<span  data-path='' class='dirnode'><img src='css/images/home.png' alt="home"/> Home</span>
+									</li>
+								</ul>
+							</div>
+							<div id='dropzone'>
+								<div class="fmgrhint">
+									<div class="fmgr-drop-highlight">
+										<p>
+											Drop Folders and Files here.
+										</p>
+									</div>
+								</div>
+
+								<ul id='file-list' class="file-list"></ul>
+								<div class="countbar">
+
+								</div>
+							</div>
+
+						</div>
+
+						<!--
+						file upload and download windows
+						-->
+						<div>
+							<div id='fmgrUploadsBtn' title="Toggle uploads window">
+								<span class="icon-arrow-up-2" ></span>
+							</div>
+							<div id='fmgrDloadsBtn' title="Toggle downloads window">
+								<span class="icon-arrow-down-2" ></span>
+							</div>
+						</div>
+
+						<div id='uploadwindow' class="upload-widget">
+							<div class="akorp-ui">
+								Uploads...
+							</div>
+							<div class="akorp-ui upload-widget-body">
+								<div id='uprogress'></div>
+								<div id='upload_status'></div>
+							</div>
+						</div>
+
+						<div id='downloads' class="download-widget">
+							<div class="akorp-ui">
+								Downloads
+							</div>
+							<div class='dlds akorp-ui download-widget-body'>
+								<div id='progress'></div>
+								<div id='dloads'></div>
+							</div>
+						</div>
+
+						<!--
+						Context Menu  -->
+						<div id="jqxMenu" >
+							<ul id='cmenu' class="akp">
+
+								<!--
+								<li id="create_file">
+								Create New File
+								</li>
+								-->
+								<li id='create_folder'>
+									Create Folder
+								</li>
+								<li id="open">
+									Open
+								</li>
+								<li id="newwnd">
+									Open in New Window
+								</li>
+								<li id="cut" >
+									Cut
+								</li>
+								<li id="copy">
+									Copy
+								</li>
+								<li id="paste">
+									Paste
+								</li>
+								<li id="download">
+									Download
+								</li>
+								<li id="dlt">
+									Delete
+								</li>
+								<li id="info">
+									Info
+								</li>
+
+							</ul>
+						</div>
+
+					</section><!-- End of Vault Contnt -->
+
+					<section id="kons" class="container kons-container appModule">
+
+						<div id="kons_sidebar">
+							<!--
+							<div class="kons_sidebar_header">
+							<span class="icon-newspaper"></span><span>Filters</span>
+							</div>
+							-->
+							<div class="kons-sidebar-main">
+								<div class="kons_filters_list">
+
+									<ul>
+										<li>
+											<span class="title">Filters</span>
+										</li>
+										<li class="filtertype" data-filter="active">
+											Explore
+										</li>
+										<li class="filtertype active" data-filter="recent">
+											Recent
+										</li>
+										<li class="filtertype" data-filter="old">
+											Early
+										</li>
+										<li class="filtertype" data-filter="favourite">
+											My Favourites
+										</li>
+										<li class="filtertype" data-filter="user">
+											My Kons
+										</li>
+										<li>
+											<span class="title">Categories</span>
+										</li>
+										<li class="filtertype konv_category" data-filter="discussion">
+											Discussion
+										</li>
+										<li class="filtertype konv_category" data-filter="question">
+											Question
+										</li>
+										<li class="filtertype konv_category" data-filter="share">
+											Share
+										</li>
+
+									</ul>
+
+								</div>
+								<div class="konv-updates">
+									<span class="title">Updates</span>
+									<ul class="konv-updlist">
+
+									</ul>
+								</div>
+							</div>
+
+						</div>
+
+						<div id='kons_content' class='kons-main-block'>
+
+							<div class="kons-inner">
+								<div id="userDefaultNewPost" class="userpost" style="display: none;">
+									<div id="newPostContent" class="new-post post-content">
+										<div id="postData" class="postbox">
+											<span id="postcancel" class="akorp-icon akorp-icon-close"></span>
+											<div id='defltPostCnt' class="dpt" contenteditable="plaintext-only">
+												<p id="dpt-text">
+													What's up?
+												</p>
+											</div>
+										</div>
+									</div>
+
+									<div class="postLinkPreview">
+
+									</div>
+									<div id="postCategories">
+										<div class="selectedCTG">
+											<span class="CTGname" data-name="discussion">Discussion</span><span class="pull-right icon-angle-down"></span>
+										</div>
+									</div>
+									<div id="postcategorieslist">
+										<div class="postcategory" data-name="discussion">
+											Discussion
+										</div>
+										<div class="postcategory" data-name="question">
+											Question
+										</div>
+										<div class="postcategory" data-name="share">
+											Share
+										</div>
+									</div>
+									<div class="linkData">
+										<input type="url" name="link" class="postURL" placeholder="Type or Paste link"/>
+										<button class="btn greenbtn btn-icon addURL" >
+											<span class="icon-checkmark"></span>
+										</button>
+									</div>
+									<div id="tagData">
+										<input type="text" id="tagInput" />
+									</div>
+									<div id="postAttachments">
+										<ul></ul>
+									</div>
+									<!--	<div class="postImgPreview">
+									<canvas id="postImgCanvas" height="0" width="0" >
+
+									</canvas>
+									</div>
+									-->
+									<div class="postUsers">
+										<div class="userData">
+
+										</div>
+										<div class="ubrowser">
+											<span class="icon-user-add"></span>
+										</div>
+									</div>
+									<div id="postAct" class="post-action">
+
+										<button class="btn btn-primary pull-right" id='shareSubmit'>
+											Share
+										</button>
+										<button class="btn btn-icon btn-primary pull-right" id='addTag'>
+											<span class="icon-tag"></span>
+										</button>
+										<button class="btn btn-icon btn-primary pull-right " id='attachFiles'>
+											<span class="icon-attachment"></span>
+										</button>
+										<button class="btn btn-icon btn-primary pull-right linkURLbtn">
+											<span class="icon-link"></span>
+										</button>
+
+										<!--
+										<button class="btn btn-primary btn-icon pull-right  pickPic">
+										<span class="icon-picture"></span>
+										</button>
+										-->
+										<input type="file" class="fpicselector akorp-hidden" accept="image/png|image/jpg|image/gif|image/jpeg"  />
+
+										<div class=" commfollowers pull-right">
+											<div class="commflw btn btn-icon btn-primary ">
+												<span class="icon-earth follow-mode"></span>
+												<span class="icon-caret-down"></span>
+											</div>
+											<ul class="flwOpt dropdown-menu">
+												<li class="opt" data-mode="public">
+													<i class="icon-earth"></i><span class="flwopt-name">Public</span>
+												</li>
+												<li class="opt" data-mode="private">
+													<i class="icon-users-2"></i><span class="flwopt-name">Custom</span>
+												</li>
+											</ul>
+										</div>
+										<div class="btn-group">
+											<input type="button" class="intLink btn" title="Bold" data-cmd='bold' value="B" />
+											<input type="button" class="intLink btn" title="Italic" data-cmd='italic' value="I" />
+											<input type="button" class="intLink btn" title="Underline" data-cmd='underline' value="U" />
+										</div>
+
+										<!--
+										<input type="color"  class="colorLink" list="colors"/>
+										<datalist id="colors">
+										<option>#ff0000</option>
+										<option>#0000ff</option>
+										<option>#00ff00</option>
+										<option>#ffff00</option>
+										<option>#00ffff</option>
+										</datalist>
+										-->
+									</div>
+								</div>
+								<div id="sharedPosts" class="posts-list">
+									<div class="goTop">
+										<i class="icon-arrow-up-3"></i>
+										<span> Top</span>
+									</div>
+								</div>
+							</div>
+
+						</div>
+						<!-- Knonversation content -->
+					</section><!-- End conversation content -->
+
+					<section id="planner" class="container planner appModule">
+
+						<div class="calender_view">
+							<div class="cal_side">
+
+								<div class="daylist">
+									<div class="daylistheader">
+										Today
+									</div>
+									<div class="todayevents">
+										<ul>
+											<li>
+												<div class="calevent empty-invite" >
+
+													No Events
+
+												</div>
+											</li>
+										</ul>
+
+									</div>
+								</div>
+
+								<div class="calmenu invites">
+									<div class="calmenutitle">
+										Event Invitations
+									</div>
+									<div class="calmenulist">
+										<ul>
+											<li>
+												<div class="calevent-invite empty-invite" >
+
+													No Invitations
+
+												</div>
+											</li>
+										</ul>
+									</div>
+								</div>
+								<div class="calmenu upcoming">
+									<div class="calmenutitle">
+										Upcoming Events
+									</div>
+									<div class="calmenulist">
+										<ul>
+											<li>
+												<div class="calevent empty-invite" >
+
+													No Events
+
+												</div>
+											</li>
+										</ul>
+									</div>
+								</div>
+
+							</div>
+							<div class="event_mgr">
+
+							</div>
+							<div class="cal_view " id="fcal">
+
+							</div>
+
+						</div>
+					</section>
+					<!--
+					End of planner content
+					-->
+
+					<section id="dashboard" class="container dashboard appModule stretch">
+
+						<div id="userGroupView" class="groupview">
+							<header class="row-fluid groupHeader">
+								<div>
+									<div style="display: inline-block;" class="groupPic-part">
+										<a class="" href="#"> <img class="img-circle  groupImg img-extend" src="" height="100px" width="100px"/> </a>
+										<p class="groupPic-change">
+											<span class="">Change</span>
+										</p>
+									</div>
+									<div class="" style="display: inline-block; vertical-align: middle;">
+										<h3 class="groupTitle firstCap">Group Title</h3>
+										<!-- <span class="">Members</span> -->
+
+										<!--
+										<button class="btn btn-primary pull-right" data-toggle="modal" data-target="#invitePeople2Group">
+										Invite People
+										</button>
+										-->
+
+									</div>
+								</div>
+								<div>
+									<button class="btn btn-inverse groupLeave pull-right">
+										Leave
+									</button>
+
+									<button class="btn btn-danger groupDelete pull-right">
+										Delete
+									</button>
+								</div>
+							</header>
+							<div class="row-fluid groupPendingApprovalsList">
+								<h3>Pending Requests <span class="badge badge-important pendingCount"> 0 </span></h3>
+								<div class="groupPendingApprovals">
+
+								</div>
+
+							</div>
+
+							<div class="row-fluid groupTeamList">
+								<h3 class="">Your Team</h3>
+								<div class="groupTeam">
+
+								</div>
+							</div>
+							<div id="invitePeople2Group" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+								<div class="modal-header">
+									<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+										×
+									</button>
+									<h3 >Invite People</h3>
+								</div>
+								<div class="modal-body">
+									<div>
+										<button class="btn btn-primary pull-right inviteaddpplbtn">
+											Add People
+										</button>
+									</div>
+									<div class="invite2grouplist">
+										<p class="input-append">
+											<input type="email" required="required" placeholder="name@company.com" />
+											<button class="btn btn-icon addppl">
+												Add
+											</button>
+											<!--
+											<button class="btn btn-icon btn-danger">
+											<span class="icon-remove-3"></span>
+											</button>
+											-->
+										</p>
+									</div>
+								</div>
+								<div class="modal-footer">
+									<button class="btn btn-danger" data-dismiss="modal" aria-hidden="true">
+										Close
+									</button>
+									<button class="btn btn-primary">
+										Invite
+									</button>
+								</div>
+							</div>
+						</div>
+
+					</section>
+					<!--   user View settings and profile -->
+					<section class="userView container stretch" style="display: none;">
+
+						<div class="key-user">
+							<img id="user-std-pic"  src="css/images/stock_people.png" width="96" height=96 alt="user picture"/>
+							<ul class="db-opts-list">
+								<li class="db-opt db_active" data-routeid="userprofile_view">
+									<span class="icon-user-4"></span> Profile
+
+								</li>
+								<!--<li  data-routeid="userGroupView" class="db-opt db_active">
+								<span class="icon-users-2"></span> Group
+								</li>
+								<!--
+								<li class="dp-opt" data-routeid="usernotes">
+								Notes
+								</li>
+
+								<li class="dp-opt" data-routeid="useractivity">
+								Activity
+								</li>
+								<li data-routeid="userprofile_view">Messages</li>
+								-->
+								<li data-routeid="userSettingsView" class="db-opt">
+									<span class="icon-cog"></span> Settings
+								</li>
+							</ul>
+						</div>
+
+						<div class="db_views">
+							<div id="userprofile_view" class='profile_view db_view'>
+								<div class="profile_btnpart">
+									<span class="closeIcon akorp-icon akorp-icon-close" id='profileClose'></span>
+									<span class="closeIcon akorp-icon akorp-icon-close" id='profileEditCancel'></span>
+								</div>
+
+							</div>
+							<!--	<div id="usernotes" class="db_view">
+							<div class="usernotes-list">
+							<div class="notes_btn_bar">
+							<button class="btn btn-icon icon-plus" id="note_add"></button>
+							</div>
+							<ul class="notes_content"></ul>
+							</div>
+							<div class="usernotes-view"></div>
+							</div>
+							-->
+							<div id="userSettingsView" class="profile_view db_view">
+								<div>
+
+									<form class="form-horizontal" id="changePasswordForm">
+										<fieldset>
+
+											<!-- Form Name -->
+											<legend>
+												Change Password
+											</legend>
+
+											<!-- Text input-->
+											<div class="control-group changePasswordFormError" style="display: none;" >
+												<div class=" alert alert-error">
+													Please fill all fields correctly to proceed.
+												</div>
+											</div>
+
+											<div class="control-group">
+												<label class="control-label" for="name">Old Password</label>
+												<div class="controls">
+													<input id="old_password"   name="name" type="password" placeholder="Old Password" class="input-large" required="">
+<!-- pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!#\$%&\?])^\D.{5}" -->
+												</div>
+											</div>
+
+											<!-- Password input-->
+											<div class="control-group">
+												<label class="control-label" for="password">New Password</label>
+												<div class="controls">
+													<!-- password should contain
+													one alphabet
+													one digit
+													one special charectrer
+													should be min 6 letters
+													-->
+													<input id="new_password"  name="usr_password" type="password" placeholder="New Password" class="input-large" required="" title="Must contain 6 charecters with one upper case , one lower case, one number and one special charecter.">
+<!--  pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!#\$%&\?])^\D.{5}" -->
+												</div>
+											</div>
+
+											<!-- Password input-->
+											<div class="control-group">
+												<label class="control-label" for="cpassword">Confirm Password</label>
+												<div class="controls">
+													<input id="new_cpassword"  name="usr_password_confirm" type="password" placeholder="Confirm Password" class="input-large" required="" title="Password should match with new password.">
+<!-- pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!#\$%&\?])^\D.{5}" -->
+												</div>
+											</div>
+											<div class="control-group">
+												<div class="controls">
+													<input type="submit" value="Change" class="btn btn-primary changePswd" />
+												</div>
+											</div>
+										</fieldset>
+									</form>
+
+								</div>
+							<!--	<div>
+									<form>
+										<fieldset>
+											<legend>
+												Delete Account
+											</legend>
+											<div class="control-group">
+												<button type="submit" class="btn btn-danger">
+													Delete My Account
+												</button>
+
+											</div>
+										</fieldset>
+									</form>
+								</div>
+							-->
+
+							</div>
+						</div>
+
+					</section>
+					<!-- end of user view -->
+
+					<!-- Group Selector -->
+					<section class="groupSelectorDialog container stretch" id="groupSection">
+						<div class="groupSelectorTitle">
+							<span class="title akp-title alizarin">Groups</span>
+						</div>
+						<div class="groupActionCntrl">
+							<button class="btn btn-primary newGroupStartBtn" data-toggle="modal" data-target="#createGroupModal" data-backdrop="static" data-keyboard="false">
+								Create Group
+							</button>
+							<!--
+							<div class="btn-group dropdown">
+							<button class="btn btn-inverse invite2org dropdown-toggle" data-toggle="modal" data-target="#inviteOrgDialog" data-backdrop="static" data-keyboard="false">
+							Invite People
+							</button>
+							</div>
+							-->
+						</div>
+						<!-- invite modal -->
+						<div id="inviteOrgDialog" class="modal hide fade" style="font-size:13px;">
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+									×
+								</button>
+								<h3 >Invite People</h3>
+							</div>
+							<div class="modal-body">
+								<form method="post" action="appInvite.php" id="inviteOrgForm">
+									<div class="control-group">
+										<div class="control-label">
+											<span>Email ID</span>
+										</div>
+
+										<div class="controls">
+											<input type="email" placeholder="xyz@company.com" class="input-medium email-input" autocomplete="on" autofocus />
+										</div>
+									</div>
+
+									<div class="control-group">
+										<div class="controls">
+											<button type="submit" class="btn btn-danger">
+												Invite
+											</button>
+											<!--<a class="btn-link" href="#" >Add more</a>-->
+										</div>
+									</div>
+								</form>
+							</div>
+						</div>
+
+						<!-- create group Modal -->
+						<div id="createGroupModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true" style="font-size:13px;">
+
+							<div class="modal-header">
+								<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+									×
+								</button>
+								<h3 >Create Group</h3>
+							</div>
+							<div class="modal-body">
+								<ul class="nav nav-tabs" id="myTab" >
+									<li class="active">
+										<a href="#publicGroup" data-target="#publicGroup" data-toggle="tab" data-groupType="public">Public</a>
+									</li>
+									<li>
+										<a href="#privateGroup" data-target="#privateGroup" data-toggle="tab" data-groupType="private">Private</a>
+									</li>
+
+								</ul>
+
+								<div class="tab-content"  >
+
+									<div class="tab-pane active" id="publicGroup" style="color: #333;">
+										<form class="createPublicGroupForm form-horizontal">
+											<fieldset>
+												<div class="pull-left">
+													<span class="icon-earth CgrpIcon" ></span>
+												</div>
+												<div class="control-group">
+													<p>
+														<span>Group Name</span>
+														<br>
+														<input type="text" placeholder="Public Group name" required="required" class="groupName"/>
+													</p>
+
+													<p>
+														Any one can join in the group.
+													</p>
+												</div>
+												<div class="control-group pull-right">
+
+													<button class="btn btn-success" type="submit">
+														Done
+													</button>
+												</div>
+											</fieldset>
+										</form>
+									</div>
+									<div class="tab-pane" id="privateGroup"  style="color: #333;">
+										<form class="createPrivateGroupForm form-horizontal">
+											<fieldset>
+												<div class="pull-left">
+													<span class="icon-users-2 CgrpIcon" ></span>
+												</div>
+												<div class="control-group">
+													<p>
+														<span>Group Name</span>
+														<br>
+														<input type="text" placeholder="Private Group name" required="required" class="groupName" />
+													</p>
+
+													<p>
+														People can join by admin approval or invite only.
+													</p>
+												</div>
+												<div class="control-group pull-right">
+
+													<button class="btn btn-success" type="submit">
+														Done
+													</button>
+												</div>
+											</fieldset>
+										</form>
+									</div>
+
+								</div>
+							</div>
+
+						</div>
+
+						<!--
+						<div class="groupInviations">
+						<div class="groupsSectionTitle">
+						<span class="title akp-title alizarin medium">Your Invitations</span>
+						</div>
+						<div class="glist ginvite">
+						<div class="gcommonitem alert alert-info">
+						You don't have invitations!
+						</div>
+						</div>
+						</div>
+						-->
+						<div class="joinedGroups">
+							<div class="groupsSectionTitle">
+								<span class="title akp-title alizarin medium">Your Groups</span>
+							</div>
+							<div class="glist gjoined">
+								<div class="gcommonitem alert alert-error">
+									Create a Group or Join in other Groups to communicate and collaborate with teams.
+								</div>
+							</div>
+						</div>
+						<div class="orgGroups">
+							<div class="groupsSectionTitle">
+								<span class="title akp-title alizarin medium">All Other Groups</span>
+							</div>
+							<div class="glist gallgroups">
+								<div class="gcommonitem alert alert-error">
+									Be the first to communicate and collaborate with your teams.
+								</div>
+							</div>
+						</div>
+
+					</section>
+					<!-- End of Group Selector -->
+
+					<!-- Admin Panel -->
+
+					<section class="adminPanel container" id="adminSection" style="display: none;">
+						<div class="row-fluid">
+							<div class="widget span4">
+								<div class="widget-header">
+									Storage
+								</div>
+								<div class="widget-body stat">
+									<p>
+										2.5GB out of 5GB
+									</p>
+									<input class="knob storage" type="text" data-fgColor="#66CC66" data-angleOffset="-125" data-angleArc="250"  data-width="150" data-readOnly=true value="0" data-max="100" rel="50"/>
+								</div>
+							</div>
+							<div class="span4 widget">
+								<div class="widget-header">
+									Users
+								</div>
+								<div class="widget-body stat">
+									<p>
+										5 out of 5
+									</p>
+									<input class="knob users" type="text" data-fgColor="#66CC66" data-angleOffset="-125" data-angleArc="250"  data-width="150" data-readOnly=true  value="0" data-max="5" rel="5"/>
+
+								</div>
+							</div>
+							<div class="widget span4">
+								<div class="widget-header">
+									Plan
+								</div>
+								<div class="widget-body stat">
+
+									current Plan : basic (free)
+								</div>
+
+							</div>
+						</div>
+
+						<div class="row-fluid">
+							<div class="span12">
+								<div class="widget">
+									<form class="form-horizontal addUser_form">
+										<fieldset>
+
+											<!-- Form Name -->
+											<legend>
+												New User
+											</legend>
+											<div class="widget-body">
+												<div class="form-info">
+
+												</div>
+
+												<!-- Text input-->
+												<div class="control-group">
+													<label class="control-label" for="addUser_name">Username</label>
+													<div class="controls">
+														<input id="addUser_uname" pattern="[A-z0-9]{4,}" name="addUser_uname" type="text" placeholder="Useraname" class="input-xlarge" required="">
+
+													</div>
+												</div>
+
+												<!-- Text input-->
+
+												<div class="control-group">
+													<label class="control-label" for="addUser_fullname">First Name</label>
+													<div class="controls">
+														<input id="addUser_fname" pattern="[A-z0-9]{4,}" name="addUser_fname" type="text" placeholder="e.g: Johnson" class="input-xlarge" required="">
+
+													</div>
+												</div>
+												<!--<div class="control-group">
+													<label class="control-label" for="addUser_fullname">Last Name</label>
+													<div class="controls">
+														<input id="addUser_lname" pattern="[A-z0-9]{4,}" name="addUser_lname" type="text" placeholder="e.g: Watson" class="input-xlarge" required="">
+
+													</div>
+												</div>
+												<div class="control-group">
+													<label class="control-label" for="addUser_fullname">Email ID</label>
+													<div class="controls">
+														<input id="addUser_email" name="addUser_email" type="email" placeholder="e.g: Watsonjohn@xyz.com" class="input-xlarge" required="">
+													</div>
+												</div>-->
+
+												<!-- Password input-->
+												<div class="control-group">
+													<label class="control-label" for="addUser_pswd">Password</label>
+													<div class="controls">
+														<input id="addUser_pswd" pattern="[A-z0-9]{4,}" name="addUser_pswd" type="password" placeholder="xyzabc" class="input-xlarge" required="">
+
+													</div>
+												</div>
+
+												<!-- Password input-->
+												<div class="control-group">
+													<label class="control-label" for="addUser_cpswd">Confirm Password</label>
+													<div class="controls">
+														<input id="addUser_cpswd" pattern="[A-z0-9]{4,}" name="addUser_cpswd" type="password" placeholder="xyzabc" class="input-xlarge" required="">
+
+													</div>
+												</div>
+
+												<!-- Button -->
+												<div class="control-group">
+													<label class="control-label" for="addUser_submit"></label>
+													<div class="controls">
+														<button id="addUser_submit" name="addUser_submit" class="btn btn-success" type="submit">
+															Add
+														</button>
+													</div>
+												</div>
+											</div>
+										</fieldset>
+									</form>
+								</div>
+							</div>
+						</div>
+					
+					</section>
+					<!-- End of admin panel -->
+
+				</div>
+
+				<!--
+				End of  app content
+				-->
+			</div>
+			<div class="tourcard">
+				<span class="closeIcon tourclsbtn ">Got it! </span>
+
+				<div class="card card1 vlt" data-cardid="container">
+					Your private folder. Drag files and folders to upload.
+				</div>
+				<div class="card card2" data-cardid="kons">
+					Do not use email for discussions any more, use our konversations to discuss.
+				</div>
+				<div class="card card3" data-cardid="men">
+					Unified communications built right in to the product. make video calls, type instant messages and share your desktop.
+				</div>
+				<div class="card card4" data-cardid="dstore">
+					Enterprise grade document management system with version control and many more features.
+				</div>
+				<div class="card card5" data-cardid="planner">
+					Plan your meetings, organize your stuff with our planner.
+				</div>
+				<div class="card card6" data-cardid="pinit">
+					Bulletin board for your group.
+				</div>
+
+			</div>
+
+			<!--
+			profile picture Management
+
+			-->
+
+			<div id="profilePicAlter" class='modal hide fade'>
+				<div class="modal-header">
+					<!-- picChange_btnpart -->
+					<!-- <span class="closeIcon akorp-icon akorp-icon-close" id='picChangeClose'></span> -->
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true" id='picChangeClose'>
+						×
+					</button>
+					<h3 id="myModalLabel">Select Picture</h3>
+
+				</div>
+				<div class="modal-body">
+					<div id='cropWidget' class="">
+						<div id='surface'>
+							<p>
+								Drop here
+							</p>
+						</div>
+						<canvas id='canv1' height='400' width='400'></canvas>
+					</div>
+					<div id="previewFrame" >
+						<div class="title">
+							<h3> Preview </h3>
+						</div>
+						<div>
+							<canvas id='canv2' height='230' width='200'></canvas>
+						</div>
+
+					</div>
+				</div>
+
+				<div  class="modal-footer">
+					<!-- actions -->
+					<button id="imageSubmit" class="btn btn-success pull-right">
+						Done
+					</button>
+				</div>
+
+			</div>
+
+			<!--
+			antkorp IM
+			-->
+
+			<div id="chatwindow"  class="chatwnd">
+				<div id="chatheader" class="chatheader">
+					<ul id="chatnames" class="chatlist">
+						<!--
+						<li class="chatter">
+						<span class="chatname"> Bhargav</span><span class="chatend"></span>
+						</li>
+						sample chat user structure -->
+
+					</ul><!--
+					<span class="chatclose chatact">X</span>
+					-->
+					<span class="chatmin chatact"></span>
+				</div>
+				<section id="chatroom" class="chatroom">
+
+					<!--
+					<div id="chatmembers" class="chatmembers">
+					<div class="">
+					<div class="uimg"><img src="photo.jpg" height="32" width="32">
+					</div>
+					</div>
+
+					</div>
+					<div id="chatcontent" class="chatcontent"></div>
+					sample chat dataview structure
+					-->
+				</section>
+				<div id="chatinput" class="chatip"  contenteditable="plaintext-only"></div>
+			</div>
+
+			<!--
+			End of IM
+			-->
+
+			<!--
+			Video Call
+			-->
+
+			<div id="rtcvideo" class="">
+				<div class="vidtitle akorp-ui">
+					Video Call...
+				</div>
+				<div class="akorp-ui">
+					<div class="rtcvidnotifier">
+						<img src="" class="rtcvidstillimg" height=96 width=96 alt="calling.." />
+						<span class="status">Please wait ...</span>
+						<div class="fountainG_contr">
+							<div  class="fountainG fountainG_1"></div>
+							<div  class="fountainG fountainG_2"></div>
+							<div  class="fountainG fountainG_3"></div>
+							<div  class="fountainG fountainG_4"></div>
+							<div  class="fountainG fountainG_5"></div>
+							<div  class="fountainG fountainG_6"></div>
+							<div class="fountainG fountainG_7"></div>
+							<div  class="fountainG fountainG_8"></div>
+						</div>
+
+					</div>
+					<div class="actionSection">
+						<div>
+						<video id="remotevid" autoplay ></video>
+						<video id="sourcevid" autoplay muted="true" style=""></video>
+						</div>
+						<p class="callStatus alert alert-info"></p>
+					</div>
+				</div>
+			</div>
+
+			<!--
+			End of Video call
+			-->
+			<!--  Audio Call  -->
+			<div id="rtcaudio" class="">
+				<div class="vidtitle akorp-ui">
+					Audio Call...
+				</div>
+				<div class="akorp-ui">
+					<div class="rtcvidnotifier">
+						<img src="" class="rtcvidstillimg" height=96 width=96 alt="calling.." />
+						<span class="status">Please wait ...</span>
+						<div class="fountainG_contr">
+							<div  class="fountainG fountainG_1"></div>
+							<div  class="fountainG fountainG_2"></div>
+							<div  class="fountainG fountainG_3"></div>
+							<div  class="fountainG fountainG_4"></div>
+							<div  class="fountainG fountainG_5"></div>
+							<div  class="fountainG fountainG_6"></div>
+							<div class="fountainG fountainG_7"></div>
+							<div  class="fountainG fountainG_8"></div>
+						</div>
+					</div>
+					<div class="actionSection">
+						<img src="" alt="User Voice "  class="remoteauduser" height=96 width=96 />
+						<canvas id="rtcaudvlzr" width=300 height=200 ></canvas>
+						<audio id="remoteVoice" autoplay ></audio>
+						<audio id="sourceVoice" autoplay muted="true" ></audio>
+					</div>
+				</div>
+			</div>
+			<!-- End of Audio Call
+			-->
+
+			<!--
+			Initial Screen after login user
+			-->
+
+		</div>
+
+		<!-- Login screen or sign up
+		style="background: url(css/images/3.jpg)"
+		-->
+
+		<section class="login-screen akp-hidden"  id="userlogin">
+			<div class="container logscrn">
+				<div class="row-fluid" style="margin-top: 10%;font-size: 13px;">
+					<div class="span12">
+						<div class="span4 offset4">
+							<div class="area login">
+								<form class="form-horizontal loginform" autocomplete="on" method="post" action="" name="loginform">
+									<div class="heading">
+										<p class="form-heading" style="font-size: 15px; margin: 15px 0px;">
+											Welcome, Please Login
+										</p>
+									</div>
+									<div class="form-info" style="display: none;">
+
+									</div>
+									<!--
+									<div class="control-group">
+									<label class="control-label icon-home" for="inputCompanyName"></label>
+									<div class="controls">
+									<input type="text" id="inputCompanyName" placeholder="E.g. Some Software Pvt. Ltd." required="required"   pattern="[A-Za-z1-9].{5,25}">
+									</div>
+									</div>
+									-->
+									<div class="control-group">
+										<label class="control-label " for="inputUsername"></label>
+										<div class="controls">
+											<input type="text" id="inputUsername" placeholder="Username or Email ID" required="required" class="input-block-level">
+										</div>
+									</div>
+									<div class="control-group">
+										<label class="control-label " for="inputPassword"></label>
+										<div class="controls">
+											<input type="password" id="inputPassword" placeholder="Password" required="required"  class="input-block-level">
+										</div>
+									</div>
+									<div class="control-group">
+										<div class="controls">
+											<!--<label class="checkbox">
+												<input type="checkbox" id="inputRememberMe" >
+												Remember me </label>-->
+											<button type="submit" class="btn btn-primary applogin btn-block" style="padding: 6px 0px;">
+												LOGIN
+											</button>
+											<!--
+											<button type="reset" class="btn">
+											Clear
+											</button>
+											-->
+										</div>
+									</div>
+
+									<!--<div>
+									<a href="#" class=" btn-link">Forgot my password</a> | <a href="#pricinglist" class=" btn-link"> Sign Up </a>
+									</div>-->
+									<!--	<div class="alert alert-info">
+									<button type="button" class="close" data-dismiss="alert">
+									x
+									</button>
+
+									<table class="table-bordered" cellpadding="5px">
+									<caption>
+									Useranames List
+									</caption>
+									<thead>
+									<tr>
+									<th>User</th><th>Username</th>
+									</tr>
+									</thead>
+									<tbody>
+									<tr>
+									<td>Raju</td><td>kongaraju100002795532058</td>
+									</tr>
+									<tr>
+									<td>Ravi Kumar</td><td>naidu.trk786547317</td>
+									</tr>
+									<tr>
+									<td>Ramesh</td><td>rameshp23456100004449519308</td>
+									</tr>
+									</tbody>
+									</table>
+									<strong>Password : admin</strong>
+									<br />
+									<strong>Organization : antkorp</strong>
+									</div>
+									<!--  <div class="alert alert-error">
+									<button type="button" class="close" data-dismiss="alert">×</button>
+									<strong>Access Denied!</strong> Please provide valid authorization.
+									</div> -->
+								</form>
+							</div>
+						</div>
+
+					</div>
+
+				</div>
+			</div>
+		</section>
+
+		<section class="pricingscreen " id="pricinglist">
+			<div class="container-fluid">
+				<div class="row-fluid ">
+
+					<div class="span3 tiny pricing-table-column ">
+						<div class="pricing-table-header-tiny">
+							<h2>$ 0/mo</h2>
+							<h3>Free Edition</h3>
+						</div>
+						<div class="pricing-table-features">
+							<p>
+								<strong>5</strong> Users
+							</p>
+							<p>
+								<strong>2GB</strong> Storage
+							</p>
+							<p>
+								<strong>Unlimited</strong> Features
+							</p>
+
+						</div>
+						<div class="pricing-table-signup-tiny">
+							<p>
+								<a href="#usersignup">Sign Up</a>
+							</p>
+						</div>
+					</div>
+					<div class="span3 small pricing-table-column">
+						<div class="pricing-table-header-small">
+							<h2>$ 299/mo</h2>
+							<h3>Cloud Edition</h3>
+						</div>
+						<div class="pricing-table-features">
+							<p>
+								<strong>50</strong> Users
+							</p>
+							<p>
+								<strong>30GB</strong> Storage
+							</p>
+							<p>
+								<strong>Unlimited</strong> Features
+							</p>
+							<p>
+								<strong>Own</strong> Domain
+							</p>
+
+						</div>
+						<div class="pricing-table-signup-small">
+							<p>
+								<a href="#usersignup">Sign Up</a>
+							</p>
+						</div>
+					</div>
+
+					<div class="span3 price-medium pricing-table-column">
+						<div class="pricing-table-header-medium">
+							<h2>$ 699/mo</h2>
+							<h3>Enterprise Edition</h3>
+						</div>
+						<div class="pricing-table-features">
+							<p>
+								<strong>Unlimited </strong> Users
+							</p>
+							<p>
+								<strong>Unlimited</strong> Storage
+							</p>
+							<p>
+								<strong>Unlimited</strong> Features
+							</p>
+							<p>
+								<strong>Own</strong> Domain
+							</p>
+							<p>
+								<strong>Free</strong> Support
+							</p>
+						</div>
+						<div class="pricing-table-signup-medium">
+							<p>
+								<a href="#usersignup">Sign Up</a>
+							</p>
+						</div>
+					</div>
+
+					<div class="span3 pro pricing-table-column">
+						<div class="pricing-table-header-pro">
+							<h2>$ 9999</h2>
+							<h3>On Primice Edition</h3>
+						</div>
+						<div class="pricing-table-features">
+							<p>
+								<strong>Your Own</strong> Deployment
+							</p>
+
+						</div>
+						<div class="pricing-table-signup-pro">
+							<p>
+								<a href="#">Contact Sales</a>
+							</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="">
+					<a href="#userlogin" class="btn btn-link">Back</a>
+				</div>
+				<div class="row-fluid">
+
+				</div>
+			</div>
+
+		</section>
+
+		<div id="loadbar" class="modal">
+			<span>Please wait</span>
+			<div class='apploadbar' style="margin: 20px 0px;">
+				<span class='loadpercentage icon-spinner-2'></span>
+			</div><span class='apploadstatus'>Configuring...</span>
+		</div>
+		
+		
+		
+		<!-- =================================feedback form================= -->
+		<div id="feedback_btn" class="feedback"  data-toggle="modal" data-target="#feedback_dialog" >
+			<span>Feedback</span>
+		</div>
+		
+		<div class='modal hide' id="feedback_dialog">
+			<form id="feedback_form" method="post" action="">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true" id='feedbackClose'>
+						×
+					</button>
+					<h3>Feedback</h3>
+			</div>
+			<div class="modal-body">
+				<p>
+				<input type="email" class="input-block-level fdbk_email"  placeholder="Email ID" required />
+				</p>
+				<p>
+					<textarea rows="10" required class="input-block-level fdbk_stmt" placeholder="Thanks for helping us!" ></textarea>
+				</p>
+			</div>
+			<div class="modal-footer">
+				<button type="submit" id="feedback_submit" class="btn btn-success" >Submit</button>
+			</div>
+			</form>
+		</div>
+		
+		<!-- End of Feedback --->
+
+		<audio src="media/blop.mp3" class="appAudio" ></audio>
+
+		<template id="akorp-anim-template">
+			<div class='apploadbar'>
+				<span class='loadpercentage icon-spinner-2'></span>
+			</div>
+		</template>
+
+		<!-- <script src="https://webrtc.googlecode.com/svn/trunk/samples/js/base/adapter.js"></script> -->
+		<script src="js/lib/adapter.js"></script>
+		<script data-main="js/akorp" src="js/require.js"></script>
+
+	</body>
+</html>

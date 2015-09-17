@@ -1,0 +1,5 @@
+
+
+This wont compile with the antkorp tree
+this will compile only with the qt tree when the directory 
+is moved under src/plugins/platforms directory in qt 

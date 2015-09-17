@@ -1,0 +1,2014 @@
+--[[
+/****************************************************************
+ * Copyright (c) Neptunium Pvt Ltd., 2014.
+ * Author: Neptunium Pvt Ltd..
+ *
+ * This unpublished material is proprietary to Neptunium Pvt Ltd..
+ * All rights reserved. The methods and techniques described herein 
+ * are considered trade secrets and/or confidential. Reproduction or 
+ * distribution, in whole or in part, is forbidden except by express 
+ * written permission of Neptunium.
+ ****************************************************************/
+]]
+
+--[[
+FIXME: generate URI for all the konv objects in the system. 
+FIXME: all the lists in the code follow set semantics only insert 
+item if not pre present.
+]]
+require ('os');
+require ('mongo');
+local json = require ('cjson');
+require ('posix');
+require ('lualdap');
+--require ('config');
+require ('akorp_utils');
+require ('akorp_common');
+local lb =require ('luabridge'); 
+local stp = require ('stack_trace_plus');
+debug.traceback = stp.stacktrace;
+
+clientid    = 0; -- client id of the current request being handled 
+cookie      = nil; --cookie of the current request being handled 
+signature   = " akorp_kons: ";
+svcname		= "";
+
+function 
+kons_output(uid, msg)
+--info(msg);
+luabridge.send2user(uid, msg);
+return;
+end
+
+--[[
+log the kons activity. 
+kons must always be the root object.
+]]
+function
+log_kons_activity(uid, gid, kons, activity)
+ao = activity_object.new();
+if ao then
+    ao.uid = uid; 
+    ao.gid = gid; 
+    ao.id  = kons; 
+    ao.activity = activity;
+    ao.activity_type = "kons";
+    ao:update();
+else
+    error("unable to allocate a new activity object:");
+end
+return;
+end
+
+--[[
+return the list of geneology of the kons till its root. 
+]]
+function
+get_hierarchy(kons)
+local hierarchy = {};
+table.insert(hierarchy, kons.id);
+local pid = kons.parent;
+while pid ~= 0 do
+    table.insert(hierarchy, pid);
+    local pkons = getkonvobj(pid);
+    if not pkons then
+        error("Unable to retrieve the parent of the kons");
+        return hierarchy;
+    else
+        pid = pkons.parent;
+    end
+end
+info("printing generated hierarchy");
+for i=1,#hierarchy do info(hierarchy[i]); end
+return hierarchy;
+end
+
+--[[ activity is the field only makes sense in the root of the kons. 
+    if the passed kons is not a root then get the root of the kons 
+    and then update the activity count in the root.]]
+function
+update_activity(kons)
+if kons.parent == 0 then --[[ This itself is the root ]]
+    kons.activity = kons.activity + 1;
+    kons:update();
+else
+    local root = getkonvobj(kons.root);
+    if root and root ~= 0 then
+        root.activity = root.activity + 1;
+        root:update();
+    else
+        error("getting root failed for kons"); -- [[ just log for our purpose no need to inform client. ]]
+    end
+end
+return;
+end
+
+--[[
+copy all inheritable properties form the parent konv to the self.
+]]
+function 
+inherit_properties(self, parent)
+self.followers = listcopy(parent.followers);
+self.trackers  = listcopy(parent.trackers);
+--self.attached_object = parent.attached_object;
+local ok, err = self:update();
+if not ok then
+	error_to_client(clientid, channelid, "There was some error trying to create kons");
+	error(string.format("update failed with err:%s", err));
+	return;
+end
+return;
+end
+
+--[[
+queue a notification object to all the intended recipients. 
+if the user is online then send him a live notification, 
+if the user is offline then queue a offline notification in his 
+offline notification queue.
+message type will be "event".
+FIXME: Donot queue the notification to the ignorers.
+]]
+function
+bcast_new_konv_event(sender, konv)
+local event = {};
+local group, err;
+local uid;
+event.mesgtype  = "event";
+event.eventtype = "new_konv";
+event.cookie    = cookie;
+event.konv = {};
+
+event.konv.id 			     = konv.id;
+event.konv.owner_uid    	 = konv.owner_uid;
+event.konv.owner_gid    	 = konv.owner_gid;
+event.konv.uri          	 = konv.uri;
+event.konv.parent       	 = konv.parent;
+event.konv.root              = konv.root;
+event.konv.inline       	 = konv.inline;
+event.konv.inlinepos    	 = konv.inlinepos;
+event.konv.child_count 		 = konv.child_count; 
+event.konv.likecount    	 = konv.likecount; 
+event.konv.dislikecount 	 = konv.dislikecount;
+event.konv.locked       	 = konv.locked;
+event.konv.preview       	 = konv.preview; 
+event.konv.content       	 = konv.content;
+event.konv.taglist       	 = {};
+event.konv.taglist       	 = listcopy(konv.taglist);
+if konv.attachments then 
+event.konv.attachments       = {};
+event.konv.attachments       = listcopy(konv.attachments);
+end
+event.konv.private       	 = konv.private;
+event.konv.create_timestamp  = konv.create_timestamp;
+event.konv.category          = konv.category;
+event.konv.edit_timestamp    = konv.edit_timestamp;
+event.konv_activity          = konv.activity;
+if konv.limited then 
+    event.konv.followers = listcopy(konv.followers);
+end
+
+info("konv broadcast to recipients");
+for i,uid in ipairs(konv.followers)
+do
+	local user = getuserobj(uid);
+	if user then
+		user.sent_kons = {};
+		user.recv_kons = {};
+		table.insert(user.recv_kons, konv.id);
+        event.konv.ilike             = item_present(konv.likers, uid);
+        event.konv.owner             = (konv.owner_uid == uid);
+        event.konv.idontlike         = item_present(konv.dislikers, uid);
+        event.konv.muted             = not item_present(konv.followers, uid);
+        event.konv.favourite         = item_present(konv.favouriters, uid);
+		local ok = user:update();
+		if ok then
+            local encbuf = json.encode(event);
+			kons_output(uid, encbuf);
+		end
+	else
+		error(string.format("Invalid uid: %d encountered user object missing", uid));
+	end
+end
+return;
+end
+
+--[[
+Broadcast the updated konv to all the audience with the update konv event.
+]]
+function
+bcast_update_konv_event(sender, konv)
+local event = {};
+local group, err;
+local uid;
+event.mesgtype  = "event";
+event.eventtype = "update_konv";
+event.cookie    = cookie;
+event.konv = {};
+event.konv.id 				 = konv.id;
+event.konv.owner_uid    	 = konv.owner_uid;
+event.konv.owner_gid    	 = konv.owner_gid;
+event.konv.uri          	 = konv.uri;
+event.konv.parent       	 = konv.parent;
+event.konv.root              = konv.root;
+event.konv.inline       	 = konv.inline;
+event.konv.inlinepos    	 = konv.inlinepos;
+event.konv.child_count 		 = konv.child_count; 
+event.konv.likecount    	 = konv.likecount; 
+event.konv.dislikecount 	 = konv.dislikecount;
+event.konv.locked       	 = konv.locked;
+event.konv.preview       	 = konv.preview; 
+event.konv.content       	 = konv.content;
+event.konv.taglist       	 = {};
+event.konv.taglist       	 = listcopy(konv.taglist);
+if konv.likers then
+event.konv.likers            = {}; 
+event.konv.likers            = listcopy(konv.likers);
+end
+if konv.dislikers then 
+event.konv.dislikers         = {};
+event.konv.dislikers         = listcopy(konv.dislikers);
+end
+event.konv.private       	 = konv.private;
+event.konv.create_timestamp  = konv.create_timestamp;
+event.konv.category          = konv.category;
+event.konv.edit_timestamp    = konv.edit_timestamp;
+event.konv.activity          = konv.activity;
+if konv.attachments then 
+event.konv.attachments       = {};
+event.konv.attachments       = listcopy(konv.attachments);
+end
+if konv.limited then
+    event.konv.followers = {};
+    event.konv.followers = listcopy(konv.followers);
+end
+info("konv update broadcast to recipients");
+for i,uid in ipairs(konv.followers)
+do
+	local user = getuserobj(uid);
+	if user then
+		user.sent_kons = {};
+		user.recv_kons = {};
+		table.insert(user.recv_kons, konv.id);
+        event.konv.ilike             = item_present(konv.likers, uid);
+        event.konv.owner             = (konv.owner_uid == uid);
+        event.konv.idontlike         = item_present(konv.dislikers, uid);
+        event.konv.muted             = not item_present(konv.followers, uid);
+        event.konv.favourite         = item_present(konv.favouriters, uid);
+		local ok = user:update();
+		if ok then 
+            local encbuf = json.encode(event);
+			kons_output(uid, encbuf);
+		end
+	else
+		error(string.format("Invalid uid: %d encountered user object missing", uid));
+	end
+end
+return;
+end
+
+--[[
+Add user to the tracker list recursively to all the children of the kons.
+only do it if not already present.
+]]
+function
+add_user_as_tracker(uid, kons)
+if not item_present(kons.trackers, uid) then
+    table.insert(kons.trackers, uid);
+    kons:update();
+end
+for i,child in ipairs(kons.children) do
+    local ckons = getkonvobj(child); -- Pls note that these are ids and not actual objects.
+    if ckons then
+        add_user_as_tracker(uid, ckons);
+    else
+        error_to_client(clientid, channelid, "There was some error performing operation, pls retry");
+        error("failed to retrieve the children kons from the database.");
+    end
+end
+return;
+end
+
+--[[
+remove the user from the list of trackers recursively. 
+]]
+function 
+remove_user_as_tracker(uid, kons)
+for i,child in ipairs(kons.children) do
+    local ckons = getkonvobj(child); -- Pls note that these are ids and not actual objects.
+    if ckons then
+        remove_user_as_tracker(uid, ckons);
+        if item_present(ckons.trackers, uid) then
+            remove_item(ckons.trackers, uid);
+            ckons:update();
+        end
+    else
+        error_to_client(clientid, channelid, "There was some error performing operation, pls retry");
+        error("failed to retrieve the children kons from the database.");
+    end
+end
+return;
+end
+
+--[[ 
+store the kons object in the db 
+use id as the cookie sent by the client first time inserting in to mongodb 
+get the object with the cookie as id and then copy the ObjectId to the id 
+field.
+if this has a parent id then update the parents child id to self.
+XXX: inheritance of properties from parent. 
+At the time of creation if the konv is being created as a child of some existing
+konv, then copy some properties of parent to the child. the best example can be 
+the list of followers , the followers are group members plus folks who have 
+explicitly registered with the follow button. 
+
+FIXME: intended recipients is all the group members plus the followers.
+copy the list of followers from the parent to child, if this is a child.
+FIXME: Generate a reference and add it in the notification queue of all the 
+intended recipients.
+]]
+function 
+handle_new_konv(clientid, channelid, msg)
+info("new konv mesg");
+local kons = konv_object.new(); 
+local err  = nil;
+local ok; 
+local notiftype = "";
+local desc = "";
+local id = 0;
+local notif = nil;
+local vevent = nil;
+local file = nil;
+
+kons.parent    = msg.parent;
+kons.root      = msg.root;
+kons.owner_uid = msg.uid;
+kons.owner_gid = msg.gid;
+kons.content   = msg.content;
+kons.create_timestamp = msg.create_timestamp;
+kons.edit_timestamp   = msg.edit_timestamp; 
+kons.category  = msg.category;
+if msg.attached_object then 
+    info("kons is attached to some object");
+    kons.attached_object = msg.attached_object;
+    --[[ get the vevent object and update the kons reference in the vevent object as well. ]]
+    --[[This may fail when the vevent object creation request arrives next to the kons request.]]
+    if msg.category == "calendar" then 
+        vevent = get_vevent_object(msg.attached_object);
+    elseif msg.category == "file" then
+        file = get_file_object(msg.attached_object);
+    end
+    if vevent then
+       vevent.kons = kons.id;
+       vevent:update();
+       if kons.parent == 0 then kons.trackers = listcopy(vevent.invited); end
+    elseif file then 
+        file.kons = kons.id;
+        file:update();
+        if kons.parent == 0 then kons.trackers = listcopy(file.followers); end
+    else
+        error("failed to find the attached object for the kons");
+    end
+else
+    info("not a attached kons");
+end
+if msg.attachments then 
+    kons.attachments = {};
+    kons.attachments = listcopy(msg.attachments);
+end
+kons.taglist = {};
+kons.taglist = listcopy(msg.taglist); --copy the tag cloud.
+
+if kons then
+    --[[ fill the followers list the group member list is the followers list. ]]
+    if msg.followers then
+        --info("this is a private message");
+        kons.limited = true;
+        kons.followers = {};
+        kons.followers = listcopy(msg.followers);
+    else
+        local grp = getgroupobj(kons.owner_gid);
+        kons.followers = listcopy(grp.members);
+    end
+
+	ok, err = kons:update();
+	if not ok and err then
+		error_to_client(clientid, channelid, "There was some error creating new konversation, pls retry");
+		error(string.format("update failed with err=%s",err));
+		return;
+	end
+	info("konv stored in database");
+	--[[ update the parent object, set the child to our id ]]
+	if kons.parent ~= 0 then
+		local pkons, err = getkonvobj(kons.parent);
+		if pkons then
+			inherit_properties(kons, pkons);
+			table.insert(pkons.children, kons.id);
+			pkons.child_count = pkons.child_count + 1;
+			ok, err = pkons:update();
+			if not ok and err then 
+				error_to_client(clientid, channelid, "There was some error creating new konversation, pls retry");
+				error(string.format("getkonvobj failed with err=%s",err));
+				return;
+			end
+            --[[ update the parent kons as well. ]]
+            bcast_update_konv_event(msg.uid, pkons);
+            update_activity(pkons);
+            --[[ Also update the edit_timestamp of the root object of the konv so that the query will display the 
+                elements properly. ]]
+            local root = getkonvobj(msg.root);
+            if root then
+                root.edit_timestamp = msg.edit_timestamp;
+                root:update();
+            end
+            --[[ if the new kons is a reply then add the user as a tracker to the parent as well if 
+                 he is not already a tracker. and propagate that to all the children down]]
+            add_user_as_tracker(msg.uid, pkons);
+		else
+			error_to_client(clientid, channelid, "There was some error creating new konversation, pls retry");
+			error(string.format("getkonvobj failed with err=%s",err));
+			return;
+		end
+	end
+	--[[ notify all the recipients of the konv that a change has happened. ]]
+    add_user_as_tracker(msg.uid, kons);
+	bcast_new_konv_event(msg.uid, kons);
+else 
+	error_to_client(clientid, channelid, "There was some error creating new konversation, pls retry");
+	error("memory allocation failure for new konversation");
+end
+respond_to_client(clientid, channelid, "success");
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+if kons.parent ==  0 then
+    notiftype = "new_kons";
+    desc = "started new topic: ";
+    notif = emit_notification(msg.uid, msg.gid, "kons", notiftype, kons.id, kons.followers, desc, preview);
+else
+    notiftype = "kons_replied";
+    desc = "replied to comment on";
+    notif = emit_notification(msg.uid, msg.gid, "kons", notiftype, kons.parent, kons.trackers, desc, preview);
+end
+--[[
+override the default if the categories are different.
+]]
+if msg.category == "calendar" or msg.category == "file" then
+    info("overriding category from kons to calendar/file");
+    if msg.attached_object then
+        if msg.category == "calendar" then 
+            notif.vevent = msg.attached_object;
+            notif.description = "commented on ";
+        elseif msg.category == "file" then
+            notif.file = msg.attached_object;
+            notif.description = "commented on ";
+        else 
+            error("Unsupported category :", msg.category);
+        end
+    else
+        local pkons = getkonvobj(kons.parent);
+        if pkons then
+            if pkons.parent == 0 then -- attached object will be only present in the root kons.
+                if msg.category == "calendar" then
+                    vevent = get_vevent_object(pkons.attached_object);
+                    if vevent then
+                        notif.vevent = vevent.id;
+                    else
+                        error("Unable to find the vevent pointed by the pkons");
+                    end
+                elseif msg.category == "file" then
+                    file = get_file_object(pkons.attached_object); 
+                    if file then
+                        notif.file = file.fqpn;
+                    else
+                        error("Unable to find the file pointed by the pkons");
+                    end
+                end
+            end
+        end
+    end
+    if msg.category == "calendar" then notif.category = "calendar"; end
+    if msg.category == "file" then notif.category = "file"; end
+    if vevent then
+        notif.description = notif.description .. string.format("event:%s", vevent.title);
+    elseif file then
+        notif.description = notif.description .. string.format("file:%s", file.fqpn);
+    end
+end
+if notif then
+    info("got new notification now sending");
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    --for i=1,#notif.hierarchy do info(notif.hierarchy[i]); end
+    notif:update();
+    notify(msg.uid, notif);
+else
+    error("failed to create new notification object");
+end
+return;
+end
+
+--[[
+broadcast the delete konv event to all the users of the group.
+]]
+function
+bcast_delete_konv_event(konv)
+local event = {};
+local uid;
+event.mesgtype  = "event";
+event.eventtype = "delete_konv";
+event.konv = {};
+event.konv.id = konv.id;
+event.konv.root = konv.root;
+event.konv.category = konv.category;
+local group = getgroupobj(konv.owner_gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Invalid group id: %d given, group missing from system", konv.owner_gid)); 
+	error(string.format("Invalid group id: %d given, group missing from system", konv.owner_gid));
+	return;
+end
+for i,uid in ipairs(group.members)
+do
+    local encbuf = json.encode(event);
+    kons_output(uid, encbuf);
+end
+return;
+end
+
+--[[
+A recursive function which deletes all the children traversing down the hierarchy. 
+remember its a tree which is upside down 
+we can have more than one children at one level.
+				P ...
+			   / 
+			  C----C ...
+			 /  
+			C-----C-----C ...
+Go to the leaf in the tree and then come up deleting all the children.
+]]
+function
+del_children_dfs(clientid, channelid, kons)
+info("descending down");
+for i,child in ipairs(kons.children) do
+    local ckons = getkonvobj(child); -- Pls note that these are ids and not actual objects.
+    if ckons then
+        del_children_dfs(clientid, channelid, ckons);
+        local ok, err = db:remove(akorp_kons_ns(), {id = ckons.id});
+        if not ok and err then
+            error_to_client(clientid, channelid, "There was some error deleting konversation, pls retry");
+            error(string.format("db:remove failed with err=%s", err));
+            return;
+        end
+        --delete all the notifications related to this konv.
+        local querystr = "{".. "\"".."category".."\""..":".."\"".."kons".."\""..",".."\"".."kons".."\""..":".."\""..ckons.id.."\"".."}";
+        ok, err = db:remove(akorp_notif_ns(), querystr);
+        if not ok and err then
+            error("Unable to delete the notifications for the deleted konv object.");
+        end
+        bcast_delete_konv_event(ckons); --tell all the clients to delete the konv
+    else
+        error_to_client(clientid, channelid, "There was some error deleting konversation, pls retry");
+        error("failed to retrieve the children kons from the database.");
+    end
+end
+kons.children = {};
+return;
+end
+
+--[[ 
+Delete the konversation object.  update the parents child field as well.
+Deletion sets a chain reaction where all the children need to be deleted
+traversing down the path.
+delete the references to the konv from all the recipient's notification queues.
+]]
+function 
+handle_del_konv(clientid, channelid, msg)
+info("konv delete request");
+local kons, err = getkonvobj(msg.id);
+local ok = false;
+local vevent = nil;
+local file = nil;
+if kons then
+	if kons.owner_uid ~= msg.uid then
+		error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+		error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+		return; 
+	end 
+    if kons.parent ~= 0 then
+        local pkons = getkonvobj(kons.parent);
+        if pkons then
+            pkons.child_count = pkons.child_count - 1;
+            remove_item(pkons.children, kons.id);
+            pkons:update();
+        else
+            error_to_client(clientid, channelid, "There was some error deleting konversation, pls retry");
+            error(string.format("getkonvobj failed with err=%s", err));
+        end
+    else
+        del_children_dfs(clientid, channelid, kons);
+    end
+	ok, err = db:remove(akorp_kons_ns(), { id = msg.id });
+	if not ok and err then
+		error_to_client(clientid, channelid, "There was some error deleting konversation, pls retry");
+		error(string.format("db:remove failed with err=%s", err));
+		return;
+	end
+    bcast_delete_konv_event(kons); --tell all the clients to delete the konv
+else
+	error_to_client(clientid, channelid, "There was some error deleting konversation, pls retry");
+	error(string.format("getkonvobj failed with err=%s",err));
+	return; 
+end
+respond_to_client(clientid, channelid, "success");
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+local notif = emit_notification(msg.uid, msg.gid, "kons", "kons_deleted", kons.id, kons.trackers, "deleted konversation", preview);
+--[[
+override the default if the categories are different.
+]]
+if kons.category == "calendar" or kons.category == "file" then
+    if kons.attached_object ~= 0 then
+        info("kons is attached to an object");
+        if kons.category == "calendar" then
+            notif.vevent = kons.attached_object;
+            vevent = get_vevent_object(kons.attached_object);
+            if vevent == nil then error("Unable to find the vevent object pointed by msg.attached_object"); end
+        elseif kons.category == "file" then
+            notif.file = kons.attached_object;
+            file = get_file_object(kons.attached_object);
+            if file == nil then error("Unable to find the file object pointed by msg.attached_object"); end
+        end
+    end
+    if kons.category == "calendar" then
+        notif.category = "calendar";
+        notif.description = "Deleted comment on event:";
+    elseif kons.category == "file" then
+        notif.category = "file";
+        notif.description = "Deleted comment on file:";
+    end
+    --[[ get the vevent object and update the kons reference in the vevent object as well. ]]
+    --[[This may fail when the vevent object creation request arrives next to the kons request.]]
+    if vevent then
+       info("resetting the kons in the vevent");
+       vevent.kons = 0;
+       vevent:update();
+       notif.description = notif.description .. vevent.title;
+    elseif file then
+        info("resetting the kons in the file object");
+        file.kons = 0;
+        file:update();
+        notif.description = notif.description .. file.fqpn;
+    end
+end
+if notif then
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    notif:update();
+    notify(msg.uid, notif);
+else
+    error("failed to create new notification object");
+    return;
+end
+--delete all the notifications related to this konv.
+local querystr = "{".. "\"".."category".."\""..":".."\"".."kons".."\""..",".."\"".."kons".."\""..":".."\""..kons.id.."\"".."}";
+info(querystr);
+ok, err = db:remove(akorp_notif_ns(), querystr);
+if not ok and err then
+    error("Unable to delete the notifications for the deleted konv object.");
+    return;
+end
+return;
+end 
+
+--[[
+Lock the konversation, after which no replies are allowed. All other things are 
+allowed except posting replies to the konversation.
+]]
+function 
+handle_lock_konv(clientid, channelid, msg)
+info("konv locked");
+local kons, err = getkonvobj(msg.id);
+local vevent = nil;
+local file = nil;
+if kons then
+	if kons.owner_uid ~= msg.uid then
+		error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+		error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+		return; 
+	end 
+    kons.locked = true; 
+    local ok, err = kons:update();
+    if not ok and err then 
+        error_to_client(clientid, channelid, "There was some error locking konversation, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end 
+end 
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+local notif = emit_notification(msg.uid, msg.gid, "kons", "kons_locked", kons.id, kons.trackers, "locked the konversation", preview);
+--[[
+override the default if the categories are different.
+]]
+if kons.category == "calendar" or kons.category == "file" then
+    if kons.attached_object then 
+        if kons.category == "calendar" then
+            notif.vevent = kons.attached_object;
+            vevent = get_vevent_object(kons.attached_object);
+            if vevent == nil then error("Unable to find the vevent object pointed by msg.attached_object"); end
+        elseif kons.category == "file" then
+            notif.file = kons.attached_object;
+            file = get_file_object(kons.attached_object);
+            if file == nil then error("Unable to find the file object pointed by msg.attached_object"); end
+        end
+    else
+        local pkons = getkonvobj(kons.parent);
+        if pkons then
+            if kons.category == "calendar" then
+                vevent = get_vevent_object(pkons.attached_object);
+                if vevent then 
+                    notif.vevent = vevent.id; 
+                else
+                    error("Unable to find the vevent object pointed by pkons.attached_object");
+                end
+            elseif kons.category == "file" then
+                file = get_file_object(pkons.attached_object);
+                if file then 
+                    notif.file = file.fqpn; 
+                else
+                    error("Unable to find the file object pointed by pkons.attached_object");
+                end
+            end
+        end
+    end
+    notif.category = kons.category;
+    if vevent then
+        notif.description = string.format("Locked conversation on event:%s", vevent.title);
+    elseif file then 
+        notif.description = string.format("Locked conversation on file:%s", file.fqpn);
+    end
+end
+if notif then
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    notif:update();
+    notify(msg.uid, notif);
+else 
+    error("failed to create new notification object");
+end
+return;
+end 
+
+function 
+handle_unlock_konv(clientid, channelid, msg)
+info("konv unlocked");
+local kons, err =  getkonvobj(msg.id);
+local vevent = nil;
+if kons then
+	if kons.owner_uid ~= msg.uid then
+		error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+		error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+		return; 
+	end 
+    kons.locked = false;
+    local ok, err = kons:update();
+    if not ok and err then
+        error_to_client(clientid, channelid, "There was some error unlocking konversation, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end
+end
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+local notif = emit_notification(msg.uid, msg.gid, "kons", "kons_unlocked", kons.id, kons.trackers, "unlocked the konversation", preview);
+--[[
+override the default if the categories are different.
+]]
+if kons.category == "calendar" or kons.category == "file" then
+    if kons.attached_object then
+        if kons.category == "calendar" then
+            notif.vevent = kons.attached_object;
+            vevent = get_vevent_object(kons.attached_object);
+            if vevent == nil then error("Unable to find the vevent object pointed by msg.attached_object"); end
+        elseif kons.category == "file" then
+            notif.file = kons.attached_object;
+            file = get_file_object(kons.attached_object);
+            if file == nil then error("Unable to find the vevent object pointed by msg.attached_object"); end
+        end
+    else
+        local pkons = getkonvobj(kons.parent);
+        if pkons then
+            if kons.category == "calendar" then 
+                vevent = get_vevent_object(pkons.attached_object);
+                if vevent then 
+                    notif.vevent = vevent.id; 
+                else
+                    error("Unable to find the vevent object pointed by pkons.attached_object");
+                end
+            elseif file then
+                file = get_file_object(pkons.attached_object);
+                if file then 
+                    notif.file = file.fqpn; 
+                else
+                    error("Unable to find the file object pointed by pkons.attached_object");
+                end
+            end
+        end
+    end
+    notif.category = kons.category;
+    if vevent then 
+        notif.description = string.format("Unlocked conversation on event:%s", vevent.title);
+    elseif file then 
+        notif.description = string.format("Unlocked conversation on file:%s", file.fqpn);
+    end
+end
+if notif then
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    notif:update();
+    notify(msg.uid, notif);
+else 
+    error("failed to create new notification object");
+end
+return;
+end 
+
+--[[
+message should contain the id of the kon which corresponds to the mongodb 
+object id.
+]]
+function
+handle_get_konv(clientid, channelid, msg)
+info("konv get request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    local response = {};
+    response.mesgtype = "response"; 
+    response.cookie   = cookie; 
+    response.result   = listcopy(kons);
+    response.result.owner = (kons.owner_uid == msg.uid);
+	local encbuf = json.encode(response);
+	if encbuf then
+		luabridge.send2client(clientid, -1, encbuf);
+	else
+		error_to_client(clientid, channelid, "There was some error getting konversation, pls retry");
+		error("Unable to encode to json");
+	end 
+else 
+	error_to_client(clientid, channelid, "The konversation was deleted with the id given.");
+	error(string.format("getkonvobj operation failed with err=", err));
+	return; 
+end 
+return; 
+end 
+
+--[[Add a follower to the children recursively. ]]
+function
+add_follower_in_children(kons, uid)
+for child in ipairs(kons.children) do
+    local ckons = getkonvobj(child); -- Pls note that these are ids and not actual objects.
+    if ckons then
+        add_follower_in_children(ckons, uid);
+		table.insert(kons.followers, uid);
+        kons:update();
+    else
+        error("failed to retrieve the children kons from the database.");
+    end
+end
+return;
+end
+
+--[[
+Add a follower to the konv object. 
+]]
+function
+handle_follow_konv(clientid, channelid, msg)
+info("konv follow request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    table.insert(kons.followers, msg.uid); 
+    add_follower_in_children(kons, msg.uid);
+    add_user_as_tracker(msg.uid, kons);
+    local ok, err = kons:update();
+    if not ok and err then 
+        error_to_client(clientid, channelid, "There was some error adding follower to the kons, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end 
+end 
+respond_to_client(clientid, channelid, "success");
+return;
+end 
+
+
+--[[
+A dfs walker which recursively removes the uid from the follower list. 
+]]
+function
+remove_follower_in_children(kons, uid)
+for i,child in ipairs(kons.children) do
+    local ckons = getkonvobj(child); -- Pls note that these are ids and not actual objects.
+    if ckons then
+        remove_follower_in_children(ckons, uid);
+        remove_user_as_tracker(msg.uid, kons);
+		remove_item(kons.followers, uid);
+        kons:update();
+    else
+        error("failed to retrieve the children kons from the database.");
+    end
+end
+return;
+end
+
+--[[
+remove the follower from the konv object follower list. 
+Do the same for all the children of the kons.
+]]
+function
+handle_unfollow_konv(clientid, channelid, msg)
+info("konv unfollow request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    remove_item(kons.followers, msg.uid);
+    remove_follower_in_children(kons, msg.uid);
+    local ok, err = kons:update();
+    if not ok and err then
+        error_to_client(clientid, channelid, "There was some error removing the follower, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end 
+end 
+respond_to_client(clientid, channelid, "success");
+return; 
+end 
+
+--[[
+Add a tag to the tag cloud of the konv object. 
+]]
+function 
+handle_addtag_konv(clientid, channelid, msg)
+info("konv add tag request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    for i,tag in ipairs(msg.taglist) do
+        table.insert(kons.taglist, tag); 
+    end
+    local ok, err = kons:update();
+    if not ok and err then
+        error_to_client(clientid, channelid, "There was some error inserting the tag, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end
+end
+update_activity(kons);
+respond_to_client(clientid, channelid, "success");
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+local notif = emit_notification(msg.uid, msg.gid, "kons", "kons_tagged", kons.id, kons.trackers, "Added a tag to the konversation", preview);
+if notif then
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    notif:update();
+    notify(msg.uid, notif);
+else 
+    error("failed to create new notification object");
+end
+return;
+end 
+
+--[[
+Delete the tag from the tag cloud of the konv. 
+]]
+function 
+handle_deltag_konv(clientid, channelid, msg)
+info("konv del tag request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    for i,tag in ipairs(msg.taglist) do
+        remove_item(kons.taglist, tag); 
+    end
+    local ok, err = kons:update();
+    if not ok and err then
+        error_to_client(clientid, channelid, "There was some error removing the tag, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end
+end
+respond_to_client(clientid, channelid, "success");
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+local notif = emit_notification(msg.uid, msg.gid, "kons", "kons_untagged", kons.id, kons.trackers, "deleted a tag from the konversation", preview);
+if notif then
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    notif:update();
+    notify(msg.uid, notif);
+else 
+    error("failed to create new notification object");
+end
+return;
+end 
+
+--[[
+mark the konv as private. 
+]]
+function 
+handle_mark_private_konv(clientid, channelid, msg)
+info("konv marked private ");
+local kons, err = getkonvobj(msg.id);
+if kons and kons.owner_uid ~= msg.uid then
+	error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+	error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+	return; 
+end 
+if kons and not kons.private then
+    kons.private = true;
+    local ok, err = kons:update();
+    if not ok and err then 
+        error_to_client(clientid, channelid, "There was some error marking the konv private, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end 
+end
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+return; 
+end 
+
+--[[
+Open the konv to all, if the konv is private. 
+]]
+function 
+handle_unmark_private_konv(clientid, channelid, msg)
+info("konv marked public");
+local kons, err = getkonvobj(msg.id);
+if kons and kons.owner_uid ~= msg.uid then
+	error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+	error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+	return; 
+end 
+if kons and kons.private then
+    kons.private = false;
+    local ok, err = kons:update();
+    if not ok and err then 
+        error_to_client(clientid, channelid, "There was some error marking the konv public, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end 
+end
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+return; 
+end 
+
+--[[
+register the user as liker of the konv and hike up the like count. 
+]] 
+function 
+handle_like_konv(clientid, channelid, msg)
+info("konv like registered");
+local vevent = nil;
+local file = nil;
+local kons, err = getkonvobj(msg.id);
+if kons then
+    kons.likecount = kons.likecount + 1;
+    table.insert(kons.likers, msg.uid); 
+    local ok, err = kons:update();
+    if not ok and err then 
+        error_to_client(clientid, channelid, "There was some error registering your like, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+		end
+end
+if kons.parent ~= 0 then
+    local pkons = getkonvobj(kons.parent);
+    if pkons then
+        add_user_as_tracker(msg.uid, pkons);
+    else
+		error_to_client(clientid, channelid, "There was some error registering your like, pls retry");
+		error(string.format("update failed with err=%s",err));
+    end
+else
+    add_user_as_tracker(msg.uid, kons);
+end
+update_activity(kons);
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+local notif = emit_notification(msg.uid, msg.gid, "kons", "kons_liked", kons.id, kons.trackers, "likes the post", preview);
+--[[
+override the default if the categories are different.
+]]
+if kons.category == "calendar" or kons.category == "file" then
+    if kons.attached_object then
+        if kons.category == "calendar" then 
+            notif.vevent = kons.attached_object;
+            vevent = get_vevent_object(kons.attached_object);
+            if vevent == nil then error("Unable to find the vevent object pointed by msg.attached_object"); end
+        elseif kons.category == "file" then
+            notif.file = kons.attached_object;
+            file = get_file_object(kons.attached_object);
+            if file == nil then error("Unable to find the file object pointed by msg.attached_object"); end
+        end
+    else
+        local pkons = getkonvobj(kons.parent);
+        if pkons then
+            if kons.category == "calendar" then 
+                vevent = get_vevent_object(pkons.attached_object);
+                if vevent then 
+                    notif.vevent = vevent.id; 
+                else
+                    error("Unable to find the vevent object pointed by pkons.attached_object");
+                end
+            elseif kons.category == "file" then 
+                file = get_file_object(kons.attached_object);
+                if file then 
+                    notif.file = file.fqpn; 
+                else
+                    error("Unable to find the file object pointed by pkons.attached_object");
+                end
+            end
+        end
+    end
+    info("overriding category with calendar/file");
+    notif.category = kons.category; 
+    if vevent then
+        notif.description = string.format("likes your comment on event:%s", vevent.title);
+    elseif file then 
+        notif.description = string.format("likes your comment on file:%s", file.fqpn);
+    end
+end
+if notif then
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    notif:update();
+    notify(msg.uid, notif);
+else 
+    error("failed to create new notification object");
+end
+return; 
+end 
+
+--[[
+remove the user from the liker list if he is a liker. 
+decrement the liker count. 
+]] 
+function 
+handle_revert_like_konv(clientid, channelid, msg)
+info("konv like registered");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    kons.likecount = kons.likecount - 1;
+    remove_item(kons.likers, msg.uid);
+    local ok, err = kons:update();
+    if not ok and err then
+        error_to_client(clientid, channelid, "There was some error, pls retry the operation.");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end 
+end
+if kons.parent ~= 0 then
+    local pkons = getkonvobj(kons.parent);
+    if pkons then
+        remove_user_as_tracker(msg.uid, pkons);
+    else
+		error_to_client(clientid, channelid, "There was some error registering your like, pls retry");
+		error(string.format("update failed with err=%s",err));
+    end
+else
+    remove_user_as_tracker(msg.uid, kons);
+end
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+return; 
+end 
+
+--[[
+register the user as disliker of the konv and hike up the dislike count. 
+]] 
+function 
+handle_dislike_konv(clientid, channelid, msg)
+info("konv dislike registered");
+local kons, err = getkonvobj(msg.id);
+local vevent = nil;
+local file = nil;
+if kons then
+    kons.dislikecount = kons.dislikecount + 1;
+    table.insert(kons.dislikers, msg.uid); 
+    local ok, err = kons:update();
+    if not ok and err then 
+        error_to_client(clientid, channelid, "There was some error registering your dislike, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end 
+end
+if kons.parent ~= 0 then
+    local pkons = getkonvobj(kons.parent);
+    if pkons then
+        add_user_as_tracker(msg.uid, pkons);
+    else
+        error_to_client(clientid, channelid, "There was some error registering your like, pls retry");
+        error(string.format("update failed with err=%s",err));
+    end
+else
+    add_user_as_tracker(msg.uid, kons);
+end
+update_activity(kons);
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+local notif = emit_notification(msg.uid, msg.gid, "kons", "kons_disliked", kons.id, kons.trackers, "dislikes the post", preview);
+--[[
+override the default if the categories are different.
+]]
+if kons.category == "calendar" or kons.category == "file" then
+    if kons.attached_object then
+        if kons.category == "calendar" then 
+            notif.vevent = kons.attached_object;
+            vevent = get_vevent_object(kons.attached_object);
+            if vevent == nil then error("Unable to find the vevent object pointed by msg.attached_object"); end
+        elseif kons.category == "file" then
+            notif.file = kons.attached_object;
+            file = get_file_object(kons.attached_object);
+            if file == nil then error("Unable to find the file object pointed by msg.attached_object"); end
+        end
+    else
+        local pkons = getkonvobj(kons.parent);
+        if pkons then
+            if kons.category == "calendar" then 
+                vevent = get_vevent_object(pkons.attached_object);
+                if vevent then 
+                    notif.vevent = vevent.id; 
+                else
+                    error("Unable to find the vevent object pointed by pkons.attached_object");
+                end
+            elseif kons.category == "file" then
+                file = get_file_object(pkons.attached_object);
+                if file then 
+                    notif.file = file.fqpn; 
+                else
+                    error("Unable to find the file object pointed by pkons.attached_object");
+                end
+            end
+        end
+    end
+    notif.category = "calendar";
+    if vevent then 
+        notif.description = string.format("dislikes your comment on event:%s", vevent.title);
+    elseif file then
+        notif.description = string.format("dislikes your comment on file:%s", file.fqpn);
+    end
+end
+if notif then
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    notif:update();
+    notify(msg.uid, notif);
+else 
+    error("failed to create new notification object");
+end
+return; 
+end 
+
+--[[
+remove the user from the disliker list if he is already registered as a disliker. 
+decrement the dislike count of the konv object.
+]] 
+function 
+handle_revert_dislike_konv(clientid, channelid, msg)
+info("konv dislike registered");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    kons.dislikecount = kons.dislikecount - 1;
+    remove_item(kons.dislikers, msg.uid); 
+    local ok, err = kons:update();
+    if not ok and err then
+        error_to_client(clientid, channelid, "There was some error, pls retry the operation.");
+        error(string.format("update failed with err=%s",err));
+        return;
+	end
+end
+if kons.parent ~= 0 then
+    local pkons = getkonvobj(kons.parent);
+    if pkons then
+        remove_user_as_tracker(msg.uid, pkons);
+    else
+		error_to_client(clientid, channelid, "There was some error registering your like, pls retry");
+		error(string.format("update failed with err=%s",err));
+    end
+else
+    remove_user_as_tracker(msg.uid, kons);
+end
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+return; 
+end 
+
+--[[
+unignore the konversation, previously the user might have chose to ignore the 
+konv. 
+]]
+function
+handle_unignore_konv(msg)
+info("konv unignore request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    remove_item(kons.ignorers, msg.uid);
+    local ok, err = kons:update(akorp_kons_ns(), { id = msg.id }, kons);
+    if not ok and err then 
+        error_to_client(clientid, channelid, "There was some error removing ignorer from the kons, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+User has chosen to ignore updates of the konv from now on. stop notifying him 
+if he is in the ignorer list. 
+]]
+function
+handle_ignore_konv(msg)
+info("konv ignore request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+    table.insert(kons.ignorers, msg.uid);
+    local ok, err = kons:update();
+    if not ok and err then
+        error_to_client(clientid, channelid, "There was some error adding ignorer to the kons, pls retry");
+        error(string.format("update failed with err=%s",err));
+        return;
+    end
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[ 
+send an error back to client. 
+]]
+function 
+error_to_client(clientid, channelid, estring)
+local err = {};
+err.mesgtype = "error";
+err.cookie   = cookie; 
+err.error    = estring; 
+luabridge.send2client(clientid, -1, json.encode(err));
+return;
+end
+
+--[[
+send a response back to client 
+]]
+function 
+respond_to_client(clientid, channelid, status)
+local resp = {};
+resp.mesgtype = "response";
+resp.cookie   = cookie; 
+resp.status   = status; 
+luabridge.send2client(clientid, -1, json.encode(resp));
+return;
+end
+
+--[[
+relaying information depends on the user who requested the relay.
+qeuery can be 
+    -- most liked.
+    -- most hated.
+    -- most recent.
+    -- with more activity.
+    -- by me or a particular user.
+    -- content matching a particular search string.
+    -- with attachments.
+]]
+function
+handle_relay_konv(clientid, channelid, msg)
+info("konv relay request");
+local skiplist = { "calendar", "file"}; -- list of categories to be skipped.
+local querystr = ""; -- by default all the objects returned will be in the recent time order.
+local limit = 10;
+if (msg.query == "recent") then  -- send the list based on the recent edit time stamp.
+    if msg.marker then
+        querystr = "{$query : { parent : 0,".."owner_gid:"..msg.gid..",".." category :{ $nin :".. mongo_array_of_strings(skiplist) .. "}," .. "followers :{ $in : [".. msg.uid .. "]},".." edit_timestamp : { $lt : ".. msg.marker .. "}}, $orderby : { edit_timestamp : -1}}";
+    else 
+        querystr = "{$query : { parent : 0"..",owner_gid:"..msg.gid .. ",category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]}}, $orderby : { edit_timestamp : -1}}";
+    end
+elseif (msg.query == "old") then  -- send the list based on the old edit time stamp.
+    if msg.marker then
+        querystr = "{$query : { parent : 0, ".."owner_gid:" ..msg.gid..",".. "category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]},".." edit_timestamp : { $gt : ".. msg.marker .. "}}, $orderby : { edit_timestamp : +1}}";
+    else 
+        querystr = "{$query : { parent : 0,".."owner_gid:"..msg.gid .. ",category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]}}, $orderby : { edit_timestamp : +1}}";
+    end
+elseif (msg.query == "active") then --send the list basing on the descending activity order.
+    if msg.marker then
+        querystr = "{$query : { parent : 0, " .."owner_gid:"..msg.gid..",".. "category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]},".." edit_timestamp : { $lt : ".. msg.marker .. "}}, $orderby : { activity: -1}}";
+    else 
+        querystr = "{$query : { parent : 0," .."owner_gid:"..msg.gid.. ",category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]}}, $orderby : { activity: -1}}";
+    end
+elseif (msg.query == "owner") then -- send the list of root objects created by the user.
+    if msg.marker then
+        querystr = "{$query : { parent : 0, ".."owner_gid:"..msg.gid.."," .. "category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]},".." edit_timestamp : { $lt : ".. msg.marker .. "}}}";
+    else 
+        querystr = "{$query : { parent : 0,".."owner_gid:"..msg.gid..",".. "owner_uid : " .. msg.user .. " },  $orderby : { edit_timestamp : -1}}";
+    end
+elseif (msg.query == "children") then -- send the list of children of a root object.
+    if msg.marker then
+        querystr = "{$query : { parent : " .. "\"" .. msg.id .. "\"" .. ", " .. "followers :{ $in : [".. msg.uid .. "]},".."  edit_timestamp : { $lt : ".. msg.marker .. "}}, $orderby : { edit_timestamp : -1}}";
+    else 
+        querystr = "{$query : { parent : " .. "\"" .. msg.id .. "\"" .. "}, $orderby : { edit_timestamp : -1}}";
+    end
+elseif (msg.query == "category") then -- send the list of root objects created under the category.
+    if msg.marker then
+        querystr = "{$query : { parent : 0, " .."owner_gid:"..msg.gid.."," .. "followers :{ $in : [".. msg.uid .. "]},".." category : " .. "\"" .. msg.category .. "\"" .. ",edit_timestamp:{$lt:".. msg.marker .. "}}, $orderby : { edit_timestamp : -1}}";
+    else 
+        querystr = "{$query : { parent : 0, " .."owner_gid:"..msg.gid.."," .. "followers :{ $in : [".. msg.uid .. "]},".." category : " .. "\"" .. msg.category .. "\"" .. "}, $orderby : { edit_timestamp : -1}}";
+    end
+elseif (msg.query == "user") then -- send the list of root objects created by the user.
+    if msg.marker then
+        querystr = "{$query : { parent : 0," .. "owner_gid:"..msg.gid..",".."category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. " owner_uid : " .. msg.uid .. ",edit_timestamp:{$lt:".. msg.marker .. "}}, $orderby : { edit_timestamp : -1}}";
+    else 
+        querystr = "{$query : { parent : 0," .. "owner_gid:"..msg.gid..",".."category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. " owner_uid : " .. msg.uid .. "}, $orderby : { edit_timestamp : -1}}";
+    end
+elseif (msg.query == "tag") then -- send the list of root objects having "tag" in them.
+    if msg.marker then
+        querystr = "{$query : { parent : 0, ".."owner_gid:"..msg.gid.."," .. "category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]},".." taglist : { $in : [" .. "\"" .. msg.tag .. "\"" .. "]}, edit_timestamp:{$lt:".. msg.marker .. "}}, $orderby : { edit_timestamp : -1}}";
+    else 
+        querystr = "{$query : { parent : 0, " .."owner_gid:"..msg.gid..",".. "category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]},".." taglist : { $in : [" .. "\"" .. msg.tag .. "\"" .. "]}}, $orderby : { edit_timestamp : -1}}";
+    end
+elseif (msg.query == "favourite") then -- send the list of root objects favourited by the user.
+    if msg.marker then
+        querystr = "{$query : { parent : 0, " .."owner_gid:"..msg.gid..",".. "category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]},".." favouriters : { $in : [" .. msg.uid .. "]}, edit_timestamp:{$lt:".. msg.marker .. "}}, $orderby : { edit_timestamp : -1}}";
+    else 
+        querystr = "{$query : { parent : 0, " .."owner_gid:"..msg.gid..",".. "category :{ $nin :".. mongo_array_of_strings(skiplist) .. " }," .. "followers :{ $in : [".. msg.uid .. "]},".." favouriters : { $in : [" .. msg.uid .. "]}}, $orderby : { edit_timestamp : -1}}";
+    end
+end
+info(querystr);
+--[[ issue the query to the mongodb. ]]
+local q = db:query(akorp_kons_ns(), querystr, limit);
+for result in q:results() do
+    --info(result.id);
+    --info(result.edit_timestamp);
+    --[[ prepare the response object. ]]
+    local response = {}; 
+    response.mesgtype                = "response"; 
+    response.cookie                  = msg.cookie;
+    response.result                  = {};
+    response.result.id 				 = result.id;
+    response.result.owner_uid    	 = result.owner_uid;
+    response.result.owner_gid    	 = result.owner_gid;
+    response.result.uri          	 = result.uri;
+    response.result.parent       	 = result.parent;
+    response.result.root             = result.root;
+    response.result.inline       	 = result.inline;
+    response.result.inlinepos    	 = result.inlinepos;
+    response.result.child_count 	 = result.child_count; 
+    response.result.children         = listcopy(result.children);
+    response.result.likecount    	 = result.likecount; 
+    response.result.dislikecount 	 = result.dislikecount;
+    response.result.locked       	 = result.locked;
+    response.result.preview       	 = result.preview; 
+    response.result.content       	 = result.content;
+    response.result.taglist       	 = {};
+    response.result.taglist       	 = listcopy(result.taglist);
+    if result.likers then
+    response.result.likers                = {}; 
+    response.result.likers                = listcopy(result.likers);
+    end
+    if result.dislikers then 
+    response.result.dislikers             = {}; 
+    response.result.dislikers             = listcopy(result.dislikers);
+    end
+    response.result.private       	 = result.private;
+    response.result.create_timestamp = result.create_timestamp;
+    response.result.category         = result.category;
+    response.result.edit_timestamp   = result.edit_timestamp;
+    response.result.activity         = result.activity;
+    if result.attachments then 
+    response.result.attachments = {};
+    response.result.attachments      = listcopy(result.attachments);
+    end
+    if result.limited then
+    response.result.followers = {};
+    response.result.followers = listcopy(result.followers);
+    end
+    response.result.attached_object = result.attached_object;
+    --[[update the user specific fields now. ]]
+    response.result.ilike     = item_present(result.likers, msg.uid);
+    response.result.idontlike = item_present(result.dislikers, msg.uid);
+    response.result.muted     = not item_present(result.followers, msg.uid);
+    response.result.favourite = item_present(result.favouriters, msg.uid);
+    response.result.owner     = (result.owner_uid == msg.uid);
+    local encbuf = json.encode(response);
+    if encbuf then 
+        kons_output(msg.uid, encbuf);
+    else
+        --info("failed to encode the message");
+        error("failed to encode the message ");
+    end 
+end
+return;
+end
+
+--[[
+add an additional recipient to the konv object. 
+]]
+function
+handle_add_recipient_to_konv(clientid, channelid, msg)
+info("konv add recipient request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+		if kons.owner_uid ~= msg.uid then
+			error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+			error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+			return; 
+		end 
+		table.insert(kons.followers, msg.recipient);
+		local ok, err = kons:update();
+		if not ok and err then
+			error_to_client(clientid, channelid, "There was some error adding ignorer to the kons, pls retry");
+			error(string.format("update failed with err=%s",err));
+			return;
+		end
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+remove a recipient from the konv object.
+NOTE: The recipient being removed from the konv is not a group memeber. 
+group members cannot be removed from the konv recipients list. 
+]]
+function
+handle_rem_recipient_from_konv(clientid, channelid, msg)
+info("konv remove recipient request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+		if kons.owner_uid ~= msg.uid then
+			error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+			error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+			return; 
+		end 
+		remove_item(kons.followers, msg.recipient);
+		local ok, err = kons:update();
+		if not ok and err then
+			error_to_client(clientid, channelid, "There was some error adding ignorer to the kons, pls retry");
+			error(string.format("update failed with err=%s",err));
+			return;
+		end
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+function 
+listsame(list1, list2)
+local size1 = table.getn(list1); 
+local size2 = table.getn(list2);
+if size1 ~= size2 then
+    return false;
+end
+local i = 1;
+while i <= size1 do
+    if list1[i] ~= list2[i] then
+        return false;
+    end
+    i = i + 1;
+end
+return true;
+end
+
+function
+update_followers_list(kons, list)
+for child in ipairs(kons.children) do
+    local ckons = getkonvobj(child); -- Pls note that these are ids and not actual objects.
+    if ckons then
+        update_followers_list(ckons, list);
+        ckons.followers = {}; 
+        ckons.followers = listcopy(list);
+        kons:update();
+    else
+        error("failed to retrieve the children kons from the database.");
+    end
+end
+return;
+end
+
+--[[
+Edit a konversation. This will not impact the parent or children of the konv object but 
+will send notifications to the audience. Just replace the content of the old kons object
+with the new one and update it.
+]]
+function
+handle_edit_konv(clientid, channelid, msg)
+info("konv edited.");
+local kons, err = getkonvobj(msg.id);
+local ok = false;
+local vevent = nil;
+if kons then
+	if kons.owner_uid ~= msg.uid then
+		error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+		error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+		return;
+	end
+    --overwrite the old content with the new one. 
+    kons.content = msg.content;
+    kons.edit_timestamp = msg.edit_timestamp;
+    kons.category       = msg.category; 
+    if msg.taglist then
+        kons.taglist        = {};
+        kons.taglist        = listcopy(msg.taglist);
+    end
+    if msg.attachments then
+        --info("attachments present copying ...");
+        kons.attachments    = {};
+        kons.attachments    = listcopy(msg.attachments);
+    end
+    if msg.attached_object then 
+        kons.attached_object = msg.attached_object;
+        --[[ get the vevent object and update the kons reference in the vevent object as well. ]]
+        --[[This may fail when the vevent object creation request arrives next to the kons request.]]
+        if msg.category == "calendar" then 
+            vevent = get_vevent_object(msg.attached_object);
+        elseif msg.category == "file" then 
+            file = get_file_object(msg.attached_object);
+        end
+        if vevent then
+           vevent.kons = kons.id;
+           vevent:update();
+        elseif file then 
+            file.kons = kons.id; 
+            file:update();
+        else
+            error("failed to find the attached object for the kons");
+        end
+    end
+    --check whether the old followers and the new followers are same if not 
+    --then modify the follower list of all the children in a depth first 
+    --fashion.
+    if msg.followers then
+        if not listsame(kons.followers, msg.followers) then
+            kons.limited = true;
+            update_followers_list(kons, msg.followers);
+        end
+    end
+    ok, err = kons:update();
+    if not ok then
+        error_to_client(clientid, channelid, "There was some error, trying to update, pls retry.");
+        error(string.format("update failed with err:%s", err));
+        return;
+    end
+else
+	error_to_client(clientid, channelid, "There was some error editing konversation, pls retry");
+	error(string.format("getkonvobj failed with err=%s",err));
+	return;
+end
+respond_to_client(clientid, channelid, "success");
+bcast_update_konv_event(msg.uid, kons);
+local len = string.len(kons.content);
+if len > 100 then  -- [[ adjust the length ]]
+    len = 100;
+end
+local preview = string.sub(kons.content, 1, len);
+local notif = emit_notification(msg.uid, msg.gid, "kons", "kons_edited", kons.id, kons.trackers, "edited the post", preview);
+--[[
+override the default if the categories are different.
+]]
+if msg.category == "calendar" then
+    notif.vevent = msg.attached_object;
+    notif.category = "calendar";
+    notif.description = string.format("edited comment on event:%s", vevent.title);
+elseif msg.category == "calendar" then 
+    notif.file = msg.attached_object;
+    notif.category = "file"; 
+    notif.description = string.format("edited comment on file:%s", vevent.title);
+end
+if notif then
+    notif.hierarchy = listcopy(get_hierarchy(kons));
+    notif:update();
+    notify(msg.uid, notif);
+else 
+    error("failed to create new notification object");
+end
+return;
+end
+
+--[[
+Add the user to the list of favouriters of the konversation. 
+]]
+function
+handle_mark_favourite(clientid, channelid, msg)
+local kons, err = getkonvobj(msg.id);
+if kons then
+        if item_present(kons.favouriters, msg.uid) then 
+            respond_to_client(clientid, channelid, "success");
+            return;
+        end
+		table.insert(kons.favouriters, msg.uid);
+		local ok, err = kons:update();
+		if not ok and err then
+			error_to_client(clientid, channelid, "There was some error marking favourite, pls retry");
+			error(string.format("update failed with err=%s",err));
+			return;
+		end
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+Remove the user from the list of fans of the konversation. 
+]]
+function
+handle_unmark_favourite(clientid, channelid, msg)
+local kons, err = getkonvobj(msg.id);
+if kons then
+        if not item_present(kons.favouriters, msg.uid) then
+            respond_to_client(clientid, channelid, "success");
+            return;
+        end
+		remove_item(kons.favouriters, msg.uid);
+		local ok, err = kons:update();
+		if not ok and err then
+			error_to_client(clientid, channelid, "There was some error unmarking the kons, pls retry");
+			error(string.format("update failed with err=%s",err));
+			return;
+		end
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+generate a thumbnail of the site along with the pictures in various sizes if available. 
+get the text of the web using curl library and adjust the image size using the image 
+library. send it to the client. all in 2-3 seconds if the site is down or not responding 
+in stipulated time then just send the empty strings. no preview will be available and 
+only the site link will be show in hypertext.
+]]
+function
+handle_create_thumbnail(clientid, channelid, msg)
+--info("recvd thumbnail request");
+local title, description, image = luabridge.gensitethumbnail(msg.url);
+--[[
+info("thumbnail website request");
+info(title);
+info(description);
+info("Printing image from lua ......................");
+info(image);
+]]
+if title ~= nil then
+    local response = {};
+    response.mesgtype = "response";
+    response.cookie   = cookie;
+    response.result   = {};
+    response.result.url = msg.url;
+    response.result.title = title;
+    response.result.description = description;
+    response.result.image = image;
+    local encbuf = json.encode(response);
+    if encbuf then
+        --info("sending thumbnail to client");
+        kons_output(msg.uid, encbuf);
+    else
+        error("failed to encode the message ");
+    end
+else
+    error_to_client(clientid, channelid, "There was an internal error on the server side, Please try again.");
+end
+return;
+end
+
+--[[
+handle the search request from the client. we never relay suggestions to the client.
+what we have is a rudimentary search with out pagination cache. whenever client 
+requests more we do a full search and filter the results relayed so far this is 
+extremely inefficient but works for now. worked to be later , implement pagination 
+cache which is a big enough project in itself.
+]]
+
+--[[
+Approach:
+---------
+find all the elements containing the key in the content, if the element is a root 
+then there is nothing to do. if its not then get the root from the db and add it 
+to the result list. sort the elements in a recent timestamp order and then relay
+them to the client. for now we limit the search results to be 100.
+]]
+function
+handle_search(clientid, channelid, msg)
+info("search request for : ", msg.key);
+local querystr = string.format("{\"content\" : { $regex : \"%s\"}, \"owner_gid\" : %d }", msg.key, msg.gid);
+local q = db:query(akorp_kons_ns(), querystr, 100);
+local result_count = 0;
+for result in q:results() do
+    result_count = result_count + 1;
+    local iter = result;
+    if result.root ~= 0 then
+        iter = getkonvobj(result.root);
+        if iter == nil then 
+            error("getkonvobj() failed for ", result.root);
+        end
+    end
+    local response = {};
+    response.mesgtype                = "response"; 
+    response.cookie                  = msg.cookie;
+    response.result                  = {};
+    response.result.id 				 = iter.id;
+    response.result.owner_uid    	 = iter.owner_uid;
+    response.result.owner_gid    	 = iter.owner_gid;
+    response.result.uri          	 = iter.uri;
+    response.result.parent       	 = iter.parent;
+    response.result.root             = iter.root;
+    response.result.inline       	 = iter.inline;
+    response.result.inlinepos    	 = iter.inlinepos;
+    response.result.child_count 	 = iter.child_count; 
+    response.result.children         = listcopy(iter.children);
+    response.result.likecount    	 = iter.likecount; 
+    response.result.dislikecount 	 = iter.dislikecount;
+    response.result.locked       	 = iter.locked;
+    response.result.preview       	 = iter.preview; 
+    response.result.content       	 = iter.content;
+    response.result.taglist       	 = {};
+    response.result.taglist       	 = listcopy(iter.taglist);
+    if iter.likers then
+        response.result.likers       = {}; 
+        response.result.likers       = listcopy(iter.likers);
+    end
+    if iter.dislikers then 
+        response.result.dislikers    = {}; 
+        response.result.dislikers    = listcopy(iter.dislikers);
+    end
+    response.result.private       	 = iter.private;
+    response.result.create_timestamp = iter.create_timestamp;
+    response.result.category         = iter.category;
+    response.result.edit_timestamp   = iter.edit_timestamp;
+    response.result.activity         = iter.activity;
+    if iter.attachments then 
+        response.result.attachments  = {};
+        response.result.attachments  = listcopy(iter.attachments);
+    end
+    if iter.limited then
+        response.result.followers    = {};
+        response.result.followers    = listcopy(iter.followers);
+    end
+    response.result.attached_object  = iter.attached_object;
+    --[[update the user specific fields now. ]]
+    response.result.ilike            = item_present(iter.likers, msg.uid);
+    response.result.idontlike        = item_present(iter.dislikers, msg.uid);
+    response.result.muted            = not item_present(iter.followers, msg.uid);
+    response.result.favourite        = item_present(iter.favouriters, msg.uid);
+    response.result.owner            = (iter.owner_uid == msg.uid);
+    local encbuf                     = json.encode(response);
+    if encbuf then
+        kons_output(msg.uid, encbuf);
+    else
+        error("failed to encode the message ");
+    end 
+end
+
+if result_count == 0 then 
+	error_to_client(clientid, channelid, "There were no konversations found with the given search term");
+end
+return;
+end
+
+--[[
+handle the message from the client while sending back the response 
+use the same client id we recvd from the client.
+]]
+function
+handle_mesg(clientid, channelid, data)
+local msg = json.decode(data);
+        cookie   = msg.cookie;
+		if (msg.request == "new") then 			handle_new_konv(clientid, channelid, msg);
+		elseif (msg.request == "edit") then 	handle_edit_konv(clientid, channelid, msg);
+		elseif (msg.request == "delete") then 	handle_del_konv(clientid, channelid, msg);
+		elseif (msg.request == "lock") then 	handle_lock_konv(clientid, channelid, msg);
+		elseif (msg.request == "unlock") then 	handle_unlock_konv(clientid, channelid, msg);
+		elseif (msg.request == "get") then 		handle_get_konv(clientid, channelid, msg);
+		elseif (msg.request == "follow") then 	handle_follow_konv(clientid, channelid, msg);
+		elseif (msg.request == "unfollow") then	handle_unfollow_konv(clientid, channelid, msg);
+		elseif (msg.request == "add_tag") then 	handle_addtag_konv(clientid, channelid, msg);
+		elseif (msg.request == "del_tag") then 	handle_deltag_konv(clientid, channelid, msg);
+		elseif (msg.request == "mark_private") then handle_mark_private_konv(clientid, channelid, msg);
+		elseif (msg.request == "unmark_private") then handle_unmark_private_konv(clientid, channelid, msg);
+		elseif (msg.request == "like") then 	handle_like_konv(clientid, channelid, msg);
+		elseif (msg.request == "revert_like") then 	handle_revert_like_konv(clientid, channelid, msg);
+		elseif (msg.request == "dislike") then 	handle_dislike_konv(clientid, channelid, msg);
+		elseif (msg.request == "revert_dislike") then handle_revert_dislike_konv(clientid, channelid, msg);
+		elseif (msg.request == "relay") then 	handle_relay_konv(clientid, channelid, msg);
+		elseif (msg.request == "add_recipient") then handle_add_recipient_to_konv(clientid, channelid, msg);
+		elseif (msg.request == "rem_recipient") then handle_rem_recipient_from_konv(clientid, channelid, msg);
+        elseif (msg.request == "mark_favourite") then handle_mark_favourite(clientid, channelid, msg);
+        elseif (msg.request == "unmark_favourite") then handle_unmark_favourite(clientid, channelid, msg);
+        elseif (msg.request == "create_thumbnail") then handle_create_thumbnail(clientid, channelid, msg);
+        elseif (msg.request == "search") then handle_search(clientid, channelid, msg);
+	    end
+return;
+end
+
+function
+handle_control(msg)
+info("recvd control message");
+if msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_ARRIVAL then
+    info(string.format("client arrival: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_DEPARTURE then 
+    info(string.format("client departure: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_ADD then 
+    info(string.format("channel add: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_DELETE then
+    info(string.format("channel delete: %d %d", msg.clientid, msg.channelid));
+end
+return;
+end
+
+function
+handle_signal(sig)
+info("recvd termination signal exiting ...");
+os.exit(0);
+end
+
+function
+dump_config()
+trace("Configuration dump ...");
+trace("----------------------");
+trace("mongo_server_addr:  ", mongo_server_addr);
+trace("log_file:  ", log_file);
+trace("debug_level:  ", debug_level);
+return;
+end
+
+--[[
+read the configuration and populate the variables. 
+]]
+function
+readconfig()
+mongo_server_addr = lb.getstrconfig("system.mongo_server_address");
+log_file = lb.getstrconfig("kons.log_file");
+debug_level = lb.getstrconfig("kons.debug_level");
+return;
+end
+
+function
+kons_server_main(arg)
+posix.sleep(3);
+lb.daemonize();
+lb.setlevel(LOG_TRACE); --make this configurable 
+lb.loadconfig("/etc/antkorp/antkorp.cfg");
+readconfig();
+dump_config();
+posix.syslog(LOG_INFO, string.format("akorp kons server spawned"));
+local rc = lb.openlog(log_file);
+	if not rc then
+	posix.syslog(LOG_ERROR, string.format("Unable to open log file exiting"));
+	return;
+end
+if debug_level == "info" then log_level = LOG_INFO;
+elseif debug_level == "warning" then log_level = LOG_WARNING;
+elseif debug_level == "error" then log_level = LOG_ERROR; 
+elseif debug_level == "fatal" then log_level = LOG_FATAL;
+elseif debug_level == "trace" then log_level = LOG_TRACE;
+elseif debug_level == "debug" then log_level = LOG_DEBUG;
+end
+lb.setlevel(log_level); --make this configurable 
+info("logger module initialized"); 
+db = assert(mongo.Connection.New())
+assert(db:connect(mongo_server_addr))
+info("connected to the mongodb"); 
+local estr = luabridge.createservice("kons");
+if estr then
+	info(string.format("Failed to register with the network gateway:%s", estr));
+    return;
+end
+    luabridge.setdatarecvhandler(handle_mesg);
+    luabridge.setcontrolrecvhandler(handle_control);
+    luabridge.setsignalhandler(handle_signal);
+    local estr = luabridge.run(); -- we never return from here until we call lb.stop().
+    error(estr);
+return;
+end
+
+kons_server_main(arg);

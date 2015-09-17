@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: wsGet.js</title>
+    
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+    
+    <h1 class="page-title">Source: wsGet.js</h1>
+    
+    
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source"><code>/**
+ * @author Rajukonga
+ */
+/*
+ * Websocket get
+ */
+
+var getManager = function() {
+	this._maptable = {};
+	var _self = this;
+	this.worker = new Worker("wsGetter.js");
+	this.worker.onmessage = function(e) {
+		var down_data = e.data;
+		if (!down_data.file) {
+			console.log(down_data);
+		} else if (down_data.file.mesgtype == 'ack'
+				|| down_data.file.mesgtype == 'request'
+				|| down_data.file.mesgtype == 'cancel') {
+			down_data.file.uid = akp_ws.handlers.akpauth.loginuserid;
+			akp_ws.send(down_data.file);
+			// console.log(down_data.file);
+			if (down_data.file.mesgtype == "request") {
+				var obj = _self.callGetter(down_data.file)
+
+				if (obj.onstarted) {
+					console.log(down_data.url);
+					obj.onstarted.call(_self, down_data.url);
+				}
+			} else if (down_data.file.mesgtype == "ack") {
+				var obj = _self.callGetter(down_data.file)
+				// console.log("started transfer");
+				if (obj.onBlobRecieved) {
+					// console.log(down_data.url);
+					obj.onBlobRecieved.call(_self, down_data.chunk);
+				}
+			}
+
+		} else if (down_data.file.mesgtype == 'complete') {
+
+			// console.log(down_data.file.url);
+			var obj = _self.callGetter(down_data.file)
+			if (obj.oncomplete) {
+				obj.oncomplete.call(_self, down_data.file.url,
+						down_data.file.fl);
+			}
+
+		}
+	}
+
+	this.put = function(id, object) {
+		this._maptable[id] = object;
+	}
+	this.callGetter = function(req) {
+		return this._maptable[req.cookie];
+
+	}
+}
+
+getManager.prototype.getEntry = function(file) {
+	var unique = akp_ws.createUUID();
+	file.cookie = unique;
+	var entry = new wsGet(file);
+	/*
+	 * assume that file object like name,path,cookie
+	 */
+
+	this.put(unique, entry);
+	this.postData({
+		obj : file
+	});
+	return entry;
+}
+getManager.prototype.map = function(resp) {
+	var entry = this.callGetter(resp),respdata;
+	if(resp.error){
+		//throw resp.error;
+		return false;
+	}else if (entry) {
+		try {
+			try{
+				respdata = window.atob(resp.data);
+			}catch(e){
+				respdata = this.atob(resp.data);
+			}
+		
+		} catch (e) {
+			
+			return false;
+
+		}
+		
+		resp.data=respdata;
+		
+		this.postData({
+			obj : resp
+		});
+		
+	} 
+}
+getManager.prototype.postData = function(data) {
+
+	this.worker.postMessage(data);
+}
+
+
+getManager.prototype.atob = function(input) {
+	var keyStr = "ABCDEFGHIJKLMNOP" +
+
+	"QRSTUVWXYZabcdef" +
+
+	"ghijklmnopqrstuv" +
+
+	"wxyz0123456789+/" +
+
+	"=";
+
+	var output = "";
+
+	var chr1, chr2, chr3 = "";
+
+	var enc1, enc2, enc3, enc4 = "";
+
+	var i = 0;
+
+	// remove all characters that are not A-Z, a-z, 0-9, +, /, or =
+
+	var base64test = /[^A-Za-z0-9\+\/\=]/g;
+
+	if (base64test.exec(input)) {
+
+		alert("There were invalid base64 characters in the input text.\n" +
+
+		"Valid base64 characters are A-Z, a-z, 0-9, '+', '/',and '='\n" +
+
+		"Expect errors in decoding.");
+
+	}
+
+	input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+
+	do {
+
+		enc1 = keyStr.indexOf(input.charAt(i++));
+
+		enc2 = keyStr.indexOf(input.charAt(i++));
+
+		enc3 = keyStr.indexOf(input.charAt(i++));
+
+		enc4 = keyStr.indexOf(input.charAt(i++));
+
+		chr1 = (enc1 &lt;&lt; 2) | (enc2 >> 4);
+
+		chr2 = ((enc2 &amp; 15) &lt;&lt; 4) | (enc3 >> 2);
+
+		chr3 = ((enc3 &amp; 3) &lt;&lt; 6) | enc4;
+
+		output = output + String.fromCharCode(chr1);
+
+		if (enc3 != 64) {
+
+			output = output + String.fromCharCode(chr2);
+
+		}
+
+		if (enc4 != 64) {
+
+			output = output + String.fromCharCode(chr3);
+
+		}
+
+		chr1 = chr2 = chr3 = "";
+
+		enc1 = enc2 = enc3 = enc4 = "";
+
+	} while (i &lt; input.length);
+
+	return unescape(output);
+
+}
+
+var wsGet = function(file) {
+	this.file = file;
+	this.oncomplete = "";
+}
+
+var Getter = new getManager();</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Index</a></h2><h3>Modules</h3><ul><li><a href="module-akpauth.html">akpauth</a></li><li><a href="module-commulator.html">commulator</a></li><li><a href="module-vault.html">vault</a></li></ul><h3>Classes</h3><ul><li><a href="akp.html">akp</a></li><li><a href="global.html#auth">auth</a></li><li><a href="notification.html">notification</a></li><li><a href="organization.html">organization</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getManager">getManager</a></li></ul>
+</nav>
+
+<br clear="both">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha2</a> on Tue Dec 17 2013 13:05:20 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+@font-face {
+	font-family: 'icomoon';
+	src:url('fonts/icomoon.eot');
+	src:url('fonts/icomoon.eot?#iefix') format('embedded-opentype'),
+		url('fonts/icomoon.woff') format('woff'),
+		url('fonts/icomoon.ttf') format('truetype'),
+		url('fonts/icomoon.svg#icomoon') format('svg');
+	font-weight: normal;
+	font-style: normal;
+}
+
+/* Use the following CSS code if you want to use data attributes for inserting your icons */
+[data-icon]:before {
+	font-family: 'icomoon';
+	content: attr(data-icon);
+	speak: none;
+	font-weight: normal;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+}
+
+/* Use the following CSS code if you want to have a class per icon */
+/*
+Instead of a list of all class selectors,
+you can use the generic selector below, but it's slower:
+[class*="icon-"]:before {
+*/
+.icon-home:before, .icon-pencil:before, .icon-newspaper:before, .icon-file:before, .icon-profile:before, .icon-file-2:before, .icon-file-3:before, .icon-file-4:before, .icon-copy:before, .icon-copy-2:before, .icon-folder:before, .icon-folder-open:before, .icon-box-add:before, .icon-box-remove:before, .icon-download:before, .icon-upload:before, .icon-envelop:before, .icon-calendar:before, .icon-calendar-2:before, .icon-spinner:before, .icon-cog:before, .icon-users:before, .icon-user:before, .icon-user-2:before, .icon-user-3:before, .icon-forward:before, .icon-bubble:before, .icon-bubbles:before, .icon-user-4:before, .icon-users-2:before, .icon-bubbles-2:before, .icon-bubble-2:before, .icon-bubbles-3:before, .icon-bubbles-4:before, .icon-cloud-download:before, .icon-cloud-upload:before, .icon-cloud:before, .icon-download-2:before, .icon-tree:before, .icon-upload-2:before, .icon-download-3:before, .icon-upload-3:before, .icon-busy:before, .icon-thumbs-up:before, .icon-thumbs-up-2:before, .icon-flag:before, .icon-signup:before, .icon-remove:before, .icon-remove-2:before, .icon-checkmark:before, .icon-close:before, .icon-arrow-down:before, .icon-arrow-left:before, .icon-arrow-down-left:before, .icon-arrow-down-right:before, .icon-arrow-right:before, .icon-arrow-up-right:before, .icon-arrow-up:before, .icon-arrow-up-left:before, .icon-loop:before, .icon-arrow-up-left-2:before, .icon-arrow-up-2:before, .icon-arrow-up-right-2:before, .icon-arrow-right-2:before, .icon-arrow-down-right-2:before, .icon-arrow-down-2:before, .icon-arrow-down-left-2:before, .icon-arrow-left-2:before, .icon-tab:before, .icon-mail:before, .icon-blocked:before, .icon-cancel-circle:before, .icon-checkmark-circle:before, .icon-spam:before, .icon-info:before, .icon-info-2:before, .icon-question:before, .icon-exit:before, .icon-enter:before, .icon-arrow-up-left-3:before, .icon-arrow-up-3:before, .icon-arrow-up-right-3:before, .icon-arrow-right-3:before, .icon-arrow-down-right-3:before, .icon-arrow-down-3:before, .icon-arrow-down-left-3:before, .icon-arrow-left-3:before, .icon-lock:before, .icon-lock-2:before, .icon-unlocked:before, .icon-stack:before, .icon-eye:before, .icon-eye-blocked:before, .icon-minus:before, .icon-plus:before, .icon-scissors:before, .icon-radio-checked:before, .icon-radio-unchecked:before, .icon-chrome:before, .icon-html5:before, .icon-css3:before, .icon-mic:before, .icon-envelope:before, .icon-switch:before, .icon-camera:before, .icon-new-window:before, .icon-arrow-up-alt1:before, .icon-arrow-down-alt1:before, .icon-loop-2:before, .icon-arrow:before, .icon-comment:before, .icon-facetime-video:before, .icon-caret-right:before, .icon-caret-left:before, .icon-caret-up:before, .icon-caret-down:before, .icon-angle-left:before, .icon-angle-right:before, .icon-angle-up:before, .icon-angle-down:before, .icon-double-angle-left:before, .icon-double-angle-right:before, .icon-double-angle-up:before, .icon-double-angle-down:before, .icon-reply:before, .icon-reply-2:before, .icon-minus-2:before, .icon-plus-2:before, .icon-cross:before, .icon-remove-3:before, .icon-cross-2:before, .icon-target:before, .icon-disk:before, .icon-circle:before, .icon-vcard:before {
+	font-family: 'icomoon';
+	speak: none;
+	font-style: normal;
+	font-weight: normal;
+	line-height: 1;
+	-webkit-font-smoothing: antialiased;
+}
+.icon-home:before {
+	content: "\e000";
+}
+.icon-pencil:before {
+	content: "\e001";
+}
+.icon-newspaper:before {
+	content: "\e002";
+}
+.icon-file:before {
+	content: "\e003";
+}
+.icon-profile:before {
+	content: "\e004";
+}
+.icon-file-2:before {
+	content: "\e005";
+}
+.icon-file-3:before {
+	content: "\e006";
+}
+.icon-file-4:before {
+	content: "\e007";
+}
+.icon-copy:before {
+	content: "\e008";
+}
+.icon-copy-2:before {
+	content: "\e009";
+}
+.icon-folder:before {
+	content: "\e00a";
+}
+.icon-folder-open:before {
+	content: "\e00b";
+}
+.icon-box-add:before {
+	content: "\e00c";
+}
+.icon-box-remove:before {
+	content: "\e00d";
+}
+.icon-download:before {
+	content: "\e00e";
+}
+.icon-upload:before {
+	content: "\e00f";
+}
+.icon-envelop:before {
+	content: "\e010";
+}
+.icon-calendar:before {
+	content: "\e011";
+}
+.icon-calendar-2:before {
+	content: "\e012";
+}
+.icon-spinner:before {
+	content: "\e013";
+}
+.icon-cog:before {
+	content: "\e014";
+}
+.icon-users:before {
+	content: "\e015";
+}
+.icon-user:before {
+	content: "\e016";
+}
+.icon-user-2:before {
+	content: "\e017";
+}
+.icon-user-3:before {
+	content: "\e018";
+}
+.icon-forward:before {
+	content: "\e019";
+}
+.icon-bubble:before {
+	content: "\e01a";
+}
+.icon-bubbles:before {
+	content: "\e01b";
+}
+.icon-user-4:before {
+	content: "\e01c";
+}
+.icon-users-2:before {
+	content: "\e01d";
+}
+.icon-bubbles-2:before {
+	content: "\e01e";
+}
+.icon-bubble-2:before {
+	content: "\e01f";
+}
+.icon-bubbles-3:before {
+	content: "\e020";
+}
+.icon-bubbles-4:before {
+	content: "\e021";
+}
+.icon-cloud-download:before {
+	content: "\e022";
+}
+.icon-cloud-upload:before {
+	content: "\e023";
+}
+.icon-cloud:before {
+	content: "\e024";
+}
+.icon-download-2:before {
+	content: "\e025";
+}
+.icon-tree:before {
+	content: "\e026";
+}
+.icon-upload-2:before {
+	content: "\e027";
+}
+.icon-download-3:before {
+	content: "\e028";
+}
+.icon-upload-3:before {
+	content: "\e029";
+}
+.icon-busy:before {
+	content: "\e02a";
+}
+.icon-thumbs-up:before {
+	content: "\e02b";
+}
+.icon-thumbs-up-2:before {
+	content: "\e02c";
+}
+.icon-flag:before {
+	content: "\e02d";
+}
+.icon-signup:before {
+	content: "\e02e";
+}
+.icon-remove:before {
+	content: "\e02f";
+}
+.icon-remove-2:before {
+	content: "\e030";
+}
+.icon-checkmark:before {
+	content: "\e031";
+}
+.icon-close:before {
+	content: "\e032";
+}
+.icon-arrow-down:before {
+	content: "\e033";
+}
+.icon-arrow-left:before {
+	content: "\e034";
+}
+.icon-arrow-down-left:before {
+	content: "\e035";
+}
+.icon-arrow-down-right:before {
+	content: "\e036";
+}
+.icon-arrow-right:before {
+	content: "\e037";
+}
+.icon-arrow-up-right:before {
+	content: "\e038";
+}
+.icon-arrow-up:before {
+	content: "\e039";
+}
+.icon-arrow-up-left:before {
+	content: "\e03a";
+}
+.icon-loop:before {
+	content: "\e03b";
+}
+.icon-arrow-up-left-2:before {
+	content: "\e03c";
+}
+.icon-arrow-up-2:before {
+	content: "\e03d";
+}
+.icon-arrow-up-right-2:before {
+	content: "\e03e";
+}
+.icon-arrow-right-2:before {
+	content: "\e03f";
+}
+.icon-arrow-down-right-2:before {
+	content: "\e040";
+}
+.icon-arrow-down-2:before {
+	content: "\e041";
+}
+.icon-arrow-down-left-2:before {
+	content: "\e042";
+}
+.icon-arrow-left-2:before {
+	content: "\e043";
+}
+.icon-tab:before {
+	content: "\e044";
+}
+.icon-mail:before {
+	content: "\e045";
+}
+.icon-blocked:before {
+	content: "\e046";
+}
+.icon-cancel-circle:before {
+	content: "\e047";
+}
+.icon-checkmark-circle:before {
+	content: "\e048";
+}
+.icon-spam:before {
+	content: "\e049";
+}
+.icon-info:before {
+	content: "\e04a";
+}
+.icon-info-2:before {
+	content: "\e04b";
+}
+.icon-question:before {
+	content: "\e04c";
+}
+.icon-exit:before {
+	content: "\e04d";
+}
+.icon-enter:before {
+	content: "\e04e";
+}
+.icon-arrow-up-left-3:before {
+	content: "\e04f";
+}
+.icon-arrow-up-3:before {
+	content: "\e050";
+}
+.icon-arrow-up-right-3:before {
+	content: "\e051";
+}
+.icon-arrow-right-3:before {
+	content: "\e052";
+}
+.icon-arrow-down-right-3:before {
+	content: "\e053";
+}
+.icon-arrow-down-3:before {
+	content: "\e054";
+}
+.icon-arrow-down-left-3:before {
+	content: "\e055";
+}
+.icon-arrow-left-3:before {
+	content: "\e056";
+}
+.icon-lock:before {
+	content: "\e057";
+}
+.icon-lock-2:before {
+	content: "\e058";
+}
+.icon-unlocked:before {
+	content: "\e059";
+}
+.icon-stack:before {
+	content: "\e05a";
+}
+.icon-eye:before {
+	content: "\e05b";
+}
+.icon-eye-blocked:before {
+	content: "\e05c";
+}
+.icon-minus:before {
+	content: "\e05d";
+}
+.icon-plus:before {
+	content: "\e05e";
+}
+.icon-scissors:before {
+	content: "\e05f";
+}
+.icon-radio-checked:before {
+	content: "\e060";
+}
+.icon-radio-unchecked:before {
+	content: "\e061";
+}
+.icon-chrome:before {
+	content: "\e062";
+}
+.icon-html5:before {
+	content: "\e063";
+}
+.icon-css3:before {
+	content: "\e064";
+}
+.icon-mic:before {
+	content: "\e065";
+}
+.icon-envelope:before {
+	content: "\e066";
+}
+.icon-switch:before {
+	content: "\e067";
+}
+.icon-camera:before {
+	content: "\e068";
+}
+.icon-new-window:before {
+	content: "\e069";
+}
+.icon-arrow-up-alt1:before {
+	content: "\e06a";
+}
+.icon-arrow-down-alt1:before {
+	content: "\e06b";
+}
+.icon-loop-2:before {
+	content: "\e06c";
+}
+.icon-arrow:before {
+	content: "\e06d";
+}
+.icon-comment:before {
+	content: "\f075";
+}
+.icon-facetime-video:before {
+	content: "\f03d";
+}
+.icon-caret-right:before {
+	content: "\f0da";
+}
+.icon-caret-left:before {
+	content: "\f0d9";
+}
+.icon-caret-up:before {
+	content: "\f0d8";
+}
+.icon-caret-down:before {
+	content: "\f0d7";
+}
+.icon-angle-left:before {
+	content: "\f104";
+}
+.icon-angle-right:before {
+	content: "\f105";
+}
+.icon-angle-up:before {
+	content: "\f106";
+}
+.icon-angle-down:before {
+	content: "\f107";
+}
+.icon-double-angle-left:before {
+	content: "\f100";
+}
+.icon-double-angle-right:before {
+	content: "\f101";
+}
+.icon-double-angle-up:before {
+	content: "\f102";
+}
+.icon-double-angle-down:before {
+	content: "\f103";
+}
+.icon-reply:before {
+	content: "\e06e";
+}
+.icon-reply-2:before {
+	content: "\f112";
+}
+.icon-minus-2:before {
+	content: "\e06f";
+}
+.icon-plus-2:before {
+	content: "\e070";
+}
+.icon-cross:before {
+	content: "\e071";
+}
+.icon-remove-3:before {
+	content: "\f00d";
+}
+.icon-cross-2:before {
+	content: "\e072";
+}
+.icon-target:before {
+	content: "\e073";
+}
+.icon-disk:before {
+	content: "\e074";
+}
+.icon-circle:before {
+	content: "\f111";
+}
+.icon-vcard:before {
+	content: "\e075";
+}

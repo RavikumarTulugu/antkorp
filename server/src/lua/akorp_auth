@@ -1,0 +1,2175 @@
+--[[
+/****************************************************************
+ * Copyright (c) Neptunium Pvt Ltd., 2014.
+ * Author: Neptunium Pvt Ltd..
+ *
+ * This unpublished material is proprietary to Neptunium Pvt Ltd..
+ * All rights reserved. The methods and techniques described herein 
+ * are considered trade secrets and/or confidential. Reproduction or 
+ * distribution, in whole or in part, is forbidden except by express 
+ * written permission of Neptunium.
+ ****************************************************************/
+]]
+
+--[[
+Auth server sits there and exists authenticates the users and handles other misc 
+requests like updating user or group information.
+XXX: we never modify/add/delete elements in to the ldap database. all we do is just 
+query the ldap database and sync to our user database.
+]]
+require ('os')
+require ('gd')
+require ('io')
+require ('mongo')
+require ('socket')
+local smtp = require ('socket.smtp')
+local json = require ('cjson')
+require ('posix')
+require ('lualdap')
+require ('base64')
+--require ('config')
+require ('akorp_utils')
+require ('akorp_common')
+local lb = require ('luabridge') 
+local stp = require ('stack_trace_plus');
+debug.traceback = stp.stacktrace;
+
+metaobj 	 = nil; -- user data base meta object
+clientid 	 = 0; -- client id of the current request being handled 
+cookie 		 = ""; --cookie of the current request being handled 
+signature    = " akorp_auth: "
+ld 			 = nil; -- ldap connection 
+svcname		 = "";
+cloudDeployment = true; -- set this based on the configuration.
+
+--[[
+get the meta information from the akorp database, this will contain
+things like,
+XXX: Atomically increment all the meta fields, remember that mongodb
+doesnt support locking or atomocity across objects.
+]]
+function 
+get_akorp_meta()
+return assert(db:find_one(akorp_meta_ns()));
+end 
+
+--[[
+increment the uid and save it to the database before returning 
+XXX Atomically increment the uid in the mongodb as other dbs might be in the race 
+if we fail then revert the metaobj to prev id.
+]]
+function 
+incr_meta_uid()
+metaobj.uid = metaobj.uid + 1;
+local oidstr = "{ \"_id\" : ObjectId(\"" .. metaobj._id[1] .. "\") }"; 
+local incrstr = "{ $inc : { \"uid\" : 1 }}";
+local ok,err = db:update(akorp_meta_ns(), oidstr, incrstr, false, false);
+if err then
+	metaobj.uid = metaobj.uid - 1;
+	error("\nUnable to increment the uid");
+	return nil, "Unable to increment the uid";
+end 
+return metaobj.uid;
+end 
+
+--[[
+increment the gid and save it to the database before returning 
+XXX Atomically increment the gid in the mongodb as other dbs might be in the race 
+if we fail then revert the metaobj to prev id.
+]]
+function 
+incr_meta_gid()
+metaobj.gid = metaobj.gid + 1;
+local oidstr = "{ \"_id\" : ObjectId(\"" .. metaobj._id[1] .. "\") }"; 
+local incrstr = "{ $inc : { \"gid\" : 1 }}";
+local ok,err = db:update(akorp_meta_ns(), oidstr, incrstr, false, false);
+if err then
+	metaobj.gid = metaobj.gid - 1;
+	error("\nUnable to increment the gid");
+	return nil, "Unable to increment the gid";
+end 
+return metaobj.gid;
+end 
+
+--[[
+ask the client to trigger to logout.
+and trigger the logout logic.
+]]
+function
+logout_user(uid)
+info("logging out user: ", uid);
+local event = {};
+event.mesgtype  = "event";
+event.eventtype = "logout";
+lb.send2user(uid, json.encode(event));
+if not lb.getclientid(uid) then
+    error_to_client(clientid, channelid, string.format("User not logged in", uid));
+    error("User not logged in", uid);
+    return;
+end
+--[[get the org object and send a logout event to all the members of the organization.]]
+info("broadcasting user offline status to all the online org members");
+bcast_user_status_update(getuserobj(uid), get_org_object_by_name(getuserobj(uid).organization), "offline");
+info("removing client tuple from the session cache.");
+lb.remclienttuple(uid);
+return;
+end
+
+
+--[[
+Create the user in ldap, uid is already set and gid is that of the test users.
+]]
+function
+create_user_in_ldap(user)
+--[[
+local new_user_dn = "uid=" .. user.uname .. "," .. common_ldap_user_path;
+local new_user =
+{
+	uidNumber   = user.uid,
+	gidNumber   = user.gid,
+	uid         = user.uname,
+	objectClass = listcopy(ldap_user_object_class);
+	cn          = user.uname,
+	sn          = user.uname,
+	homeDirectory = user_home_base_path .. user.uname,
+	userPassword  = "password"
+};
+check_future(true, ld.add, ld, new_user_dn, new_user);
+]]
+return true;
+end 
+
+--[[
+Create the group in ldap.
+]]
+function
+create_group_in_ldap(group)
+--[[
+local new_group_dn = "cn=" .. group.gname .."," .. common_ldap_group_path;
+local new_group =
+{
+	cn			= group.gname,
+	gidNumber   = group.gid,
+	objectClass = listcopy(ldap_group_object_class);
+};
+check_future(true, ld.add, ld, new_group_dn, new_group);
+]]
+return true;
+end
+
+--[[
+XXX: since the login is from facebook the user will not be present in the ldap 
+so add him to the ldap in the default posix group "testusers", this needs to be 
+removed later as the sync tool will sync users from ldap to user database. 
+
+it might only contain a single field just a uname and the rest all is empty. 
+just set the uid and gid of the user info and push it in to the database. 
+try to create the homedir for the user
+
+ACL settings:
+-------------
+set the acl of home directory to be 
+rwx for admin, 
+r-- for all the groups he belongs to
+--- for all others. 
+rwx for mask.
+]]
+function
+handle_add_user(clientid, channelid, msg)
+info("Add user request");
+local group;
+local err, ok;
+local user;
+local rc = 0;
+user, err = db:find_one(akorp_user_ns(), {uname = msg.uname}); 
+if user and user.organization == msg.oid then
+	error("\nUser: already present in db:", user.uname);
+	error_to_client(clientid, channelid, "User already present with the given name: ", user.uname); 
+	return;
+end 
+info("user not present: going a head with creation");
+user = user_object.new();
+if not user then 
+    error("Unable to create a new user object:");
+    error_to_client(clientid, channelid, "There was an internal error performing the requested operation, Please retry.");
+    return;
+end
+user.uid = incr_meta_uid(); 
+user.organization = msg.oid;
+user.uname = msg.uname;
+user.first_name = msg.first_name;
+user.homedir = user_home_base_path .. "/" .. msg.oid .. "/" .. "users" .."/" .. user.uname;
+user.salt = base64.encode(tostring(luabridge.gencryptrand()));
+user.password = password_hash(user, msg.password);
+info("hashed passwd: ", user.password);
+info("user.homedir : ", user.homedir);
+--[[
+check whether there is any group with the gid given, if not throw an error back. 
+]]
+ok, err = create_user_in_ldap(user); --[[ This step has to happen before we can create any directories for the user ]]
+if ok then
+    info("\nUser put in to ldap: ", user.uname);
+    if not posix.stat(user.homedir) then 
+        info("Creating home directory for user: ", user.uname, user.homedir);
+        rc = posix.mkdir(user.homedir);
+        if rc == 0 then
+            info("\nhome directory:  created for user: ", user.homedir, user.uname);
+            if cloudDeployment then
+                fattr.ownerUid = user.uid;
+                lb.setfileobject(user.homedir, json.encode(fattr));
+            end
+        else
+            error_to_client(clientid, channelid, string.format("Unable to add user :  to ldap", user.uname)); 
+		    error("\nmkdir failed for failed : ", "dir:", user.homedir, "error:", err);
+            return;
+        end
+        info("Creating shares directory for user: ", user.uname, user.homedir);
+        rc = posix.mkdir(user.homedir .. "/" .. "shares");
+        if rc == 0 then
+            info("\nshares directory:  created for user: ", user.homedir, user.uname);
+            if cloudDeployment then
+                fattr.ownerUid = user.uid;
+                lb.setfileobject(user.homedir .. "/" .. "shares", json.encode(fattr));
+            end
+        else
+            error_to_client(clientid, channelid, string.format("Unable to add user :  to ldap", user.uname)); 
+		    error("\nmkdir failed for failed : ", "dir:", user.homedir .. "/" .. "shares", "error:", err);
+            return;
+        end
+    else
+        info("User home directory already present, proceeding..");
+    end
+	if rc == 0 then
+        user:update();
+        --add the user to the user list in the organization and update the organization.
+        if msg.oid ~= 0 then 
+            local org = get_org_object_by_name(msg.oid);
+            if org then
+                table.insert(org.user_list, user.uid);
+                --[[ if the organization has no admin then the first user who enters the org becomes admin ]]
+                if org.admin == 0 then
+                    info("organization admin is now user: ", user.uid);
+                    org.admin = user.uid;
+                end
+                org:update();
+            end
+        end
+	end
+else 
+	error_to_client(clientid, channelid, string.format("Unable to add user :  to ldap", user.uname)); 
+	error("\nUnable to add user:  to ldap, error: ",user.uname, err);
+	return;
+end 
+--bcast_new_user_event(user, group);
+info("user creation success informing client.");
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+function 
+handle_get_user(clientid, channelid, msg)
+--info("Get user request");
+local user = getuserobj(msg.uid);
+if not user then
+	error_to_client(clientid, channelid, string.format("Unable to find user : ", msg.uid)); 
+	error("\ngetuserobj for user:  failed",msg.uid);
+	return;
+end
+local resp = {};
+resp.mesgtype = "response";
+resp.cookie   = cookie;
+--[[
+selectively copy parts of information while leaving the irrelevant.
+]]
+resp.user = {};
+resp.user.uid 				= user.uid;
+--resp.user.gid 				= user.gid;
+resp.user.uname     		= user.uname;
+resp.user.first_name 		= user.first_name;
+resp.user.last_name 		= user.last_name;
+resp.user.middle_name 		= user.middle_name;
+resp.user.dept 				= user.dept;
+resp.user.mob 				= user.mob;
+resp.user.work 				= user.work;
+resp.user.home 				= user.home;
+resp.user.fax 				= user.fax;
+resp.user.sex 				= user.sex;
+resp.user.interests 		= listcopy(user.interests);
+resp.user.pager 			= user.pager;
+resp.user.homeaddress 		= user.homeaddress;
+resp.user.workaddress 		= user.workaddres;
+resp.user.dob 				= user.dob;
+resp.user.organization 		= user.organization;
+resp.user.status 			= user.status;
+resp.user.status_line 		= user.status_line;
+resp.user.email 			= user.email;
+resp.user.homepage 			= user.homepage;
+resp.user.manager 			= user.manager;
+resp.user.info 				= user.info;
+resp.user.jobtitle 			= user.jobtitle;
+resp.user.image_small  		= user.image_small;
+resp.user.image_medium 		= user.image_medium;
+resp.user.image_large 		= user.image_large;
+resp.user.status  			= "offline"; 		
+
+local cnid = lb.getclientid(resp.user.uid);
+if cnid ~= 0 then
+	resp.user.status  = "online";
+end
+local encbuf = json.encode(resp);
+--info("sending user info to clientid: ", clientid);
+lb.send2client(clientid, -1, encbuf);
+return;
+end
+
+--[[
+validate the user object to have some min fields like uname
+if the image_path is missing set it to the default user pic in the 
+antkorp directory. 
+]]
+function
+handle_set_user(clientid, channelid, msg)
+info("Set user request");
+if msg.user then
+	info("uid in message :  ", msg.uid);
+	local dbusr = getuserobj(msg.uid);
+	if not dbusr then
+		error_to_client(clientid, channelid, "There was some internal error on the server pls try again"); 
+		error("\ngetuserobj() failed with ");
+		return;
+	end
+	if not dbusr.uid == msg.uid then
+		error_to_client(clientid, channelid, "Only user can change his own information, not others"); 
+		error("Users information change attempt by others");
+		return;
+	end 
+
+	dbusr.dept 		   = msg.user.dept;
+	dbusr.dob  		   = msg.user.dob; 
+	dbusr.email 	   = msg.user.email;
+	dbusr.first_name   = msg.user.first_name;
+	dbusr.middle_name  = msg.user.middle_name;
+	dbusr.homeaddress  = msg.user.homeaddress;
+	dbusr.last_name    = msg.user.last_name;
+	dbusr.mob 		   = msg.user.mob;
+	--dbusr.organization = msg.user.organization;
+	dbusr.sex 		   = msg.user.sex;
+	dbusr.workaddress  = msg.user.workaddress;
+	dbusr.jobtitle 	   = msg.user.jobtitle;
+
+	local image_path = user_home_base_path .. "/" .. dbusr.organization .. "/" .. "users".. "/" .. dbusr.uname .. "/" .. "profile.png";
+	if not posix.stat(image_path) then
+		error("\nimage file not found :   uname: ",image_path, dbusr.uname);
+		error_to_client(clientid, channelid, string.format("Your profile picture missing, it should have been @  , Pls upload your profile pic", image_path));
+	end
+
+	local im = gd.createFromPng(image_path);
+	if im then
+		local mime_str = "data:image/png;base64,";
+		local sw,sh = im:sizeXY();
+		local im2 = gd.createTrueColor(32, 32);
+		gd.copyResampled(im2, im, 0, 0, 0, 0, 32, 32, sh, sw);
+		local im_sm_str = mime_str .. base64.encode(im2:pngStr(100));
+		--info(im_sm_str);
+		dbusr.image_small = im_sm_str;
+
+		local im3 = gd.createTrueColor(48, 48);
+		gd.copyResampled(im3, im, 0, 0, 0, 0, 48, 48, sh, sw);
+		local im_med_str = mime_str .. base64.encode(im3:pngStr(100));
+		--info(im_med_str);
+		dbusr.image_medium = im_med_str;
+
+		local im4 = gd.createTrueColor(96, 96);
+		gd.copyResampled(im4, im, 0, 0, 0, 0, 96, 96, sh, sw);
+		local im_lar_str = mime_str .. base64.encode(im4:pngStr(100));
+		--info(im_lar_str);
+		dbusr.image_large = im_lar_str;
+	else
+		error_to_client(clientid, channelid, "Unable to process the users profile picture");
+		error("Unable to process the users profile picture");
+		--not a big thing to miss the image proceed 
+	end
+
+	--finally save the blob to mongo
+    dbusr:update();
+else 
+	error_to_client(clientid, channelid, "user information missing from the message"); 
+	error("user information missing from the message");
+	return;
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+we could just mark the user as 'inactive' so that we can ressurect him 
+when he changes his mind, though the user leaves his data might be still
+valid so we keep it until the admin really annihilates the user. 
+FIXME: remove the user from the group member list as well.
+]]
+function
+handle_del_user(clientid, channelid, msg)
+info("Del user request");
+if msg and msg.uname then
+	local user = getuserobj(msg.uid);
+	if user then 
+		local group = getgroupobj(msg.gid);
+		if group then
+			table.remove(group.members, msg.uid);
+			group.member_count = group.member_count -1;
+            group:update();
+		end
+	end
+    logout_user(msg.uid);
+	local ok, err = db:remove(akorp_user_ns(), {uid = msg.uid});
+	info("\nUser :  removed from user db", msg.uid);
+	if ok and not err then
+		local homedir = user_home_base_path .. "/" .. user.org .. "/" .. "users" .. "/" .. msg.uname;
+		local rc = os.execute("rm -rf " .. homedir);
+		if rc == 0 then
+			info("\nUsers homedir:   removed from system", homedir);
+			local old_user_dn = "uid=" .. msg.uname .. "," .. common_ldap_user_path;
+			check_future(true, ld.delete, ld, old_user_dn);
+			info("\nUser :  removed from ldap", msg.uname);
+		else
+			error_to_client(clientid, channelid, "There was some error on server deleting user, pls retry the operation"); 
+			error("\nfailed to remove users home directory :  ", homedir);
+			return;
+		end
+	else 
+		error_to_client(clientid, channelid, "There was some error on server deleting user, pls retry the operation"); 
+		error("\ndb:remove failed for user:  with : ", msg.uname, err);
+		return;
+	end
+else
+	error_to_client(clientid, channelid, "Malformed request Dont send it again ...");
+	error("\nclient:   has sent malformed request", clientid);
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+Check whether a group exists with the name of the new group.
+Create the group in the ldap and then create it in the mongodb 
+increment the gid in the meta object.
+add the group to the list of the groups in the organization and 
+then update the organization object.
+]]
+function
+handle_add_group(clientid, channelid, msg)
+info("Add a new group to the system");
+local ok;
+local group, err = db:find_one(akorp_group_ns(), {gname = msg.gname}); 
+if group and group.organization == msg.oid then
+	error("\nGroup: already present in db", group.gname);
+	error_to_client(clientid, channelid, string.format("Group already present with the given name: ", group.gname)); 
+	return;
+end
+
+local gid     = incr_meta_gid();
+group 		  = group_object.new();
+group.organization = msg.oid;
+group.gid     = metaobj.gid;
+group.gname   = msg.gname;
+group.admin   = msg.uid;
+group.join_by_approval = msg.join_by_approval;
+table.insert(group.members, msg.uid);
+group.member_count = group.member_count + 1;
+--[[ Add the reverse mapping. as well add the group in the list of user groups.]]
+local user = getuserobj(msg.uid);
+if user then
+    table.insert(user.groups, group.gid);
+    user:update();
+else
+    error("Unable to find the user object uid: ", msg.uid);
+    error_to_client(clientid, channelid, "Unable to complete the operation, some internal error");
+    return;
+end
+
+ok, err = create_group_in_ldap(group); --[[ This step has to happen before we can create any directories for the user ]]
+info("\ngroup   put in to ldap ", group.gname);
+	if ok then
+		group.homedir = group_home_base_path .. "/" .. group.organization .. "/" .. "groups" .. "/" .. group.gname;
+        info("Creating group home directory: ", group.homedir);
+		local rc = posix.mkdir(group.homedir);
+		--[[ FIXME: change the permissions of the created home dir to that of the group ]]
+		info("\nvalue of rc: ", rc);
+		if rc == 0 then
+            if cloudDeployment then
+                fattr.ownerGid = group.gid;
+                lb.setfileobject(group.homedir, json.encode(fattr));
+            end
+			info("\nhome directory: created for group: ", group.homedir, group.gname);
+            info("Creating shares directory: ", group.homedir .. "/" .. "shares");
+            rc = posix.mkdir(group.homedir .. "/" .. "shares");
+            if rc ~= 0 then
+                error_to_client(clientid, channelid, string.format("Unable to add group: %s", group.gname)); 
+                error("\nUnable to create directory for the group shares folder: error: ", group.gname);
+            else
+                if cloudDeployment then
+                    fattr.ownerGid = group.gid;
+                    lb.setfileobject(group.homedir .. "/" .. "shares", json.encode(fattr));
+                end
+            end
+			--[[ FIXME:set the acl settings as well ]]
+            group:update();
+            --get the organization object and update the list of groups in the organization.
+            local org = get_org_object_by_name(msg.oid);
+            if org then
+                table.insert(org.group_list, group.gid);
+                org:update();
+            else
+                error_to_client(clientid, channelid, string.format("organization object not present with id: ", msg.oid)); 
+                error("\nunable to retrieve organization object with id: ", msg.oid);
+                return;
+            end
+            group.organization = msg.oid;
+            group:update();
+		else
+			error_to_client(clientid, channelid, string.format("Unable to create home directory for group: ", group.gname)); 
+			error("\nmkdir failed for group:  failed with : ", group.gname, err);
+		end
+	else
+		error_to_client(clientid, channelid, string.format("Unable to add group:  to ldap", group.gname)); 
+		error("\nUnable to add group:  to ldap, error: ", group.gname, err);
+		return;
+	end
+info("group creation success informing client.");
+local resp = {};
+resp.group 	  = {};
+resp.mesgtype = "response";
+resp.cookie   = cookie;
+--[[
+selectively copy parts of information while leaving the irrelevant.
+]]
+resp.group.gid 				= group.gid;
+resp.group.homedir 			= group.homedir;
+resp.group.organization     = group.organization;
+resp.group.gname     		= group.gname;
+resp.group.description 		= group.description;
+resp.group.admin 			= group.admin;
+resp.group.member_count 	= group.member_count;
+resp.group.join_by_approval = group.join_by_approval;
+resp.group.follower_count   = group.follower_count;
+resp.group.members 			= listcopy(group.members);
+resp.group.followers 		= listcopy(group.followers);
+resp.group.tags 			= listcopy(group.tags);
+resp.group.categories       = listcopy(group.categories);
+local encbuf = json.encode(resp);
+info("sending to clientid: ",clientid);
+lb.send2client(clientid, channelid, encbuf);
+return;
+end
+
+--[[
+get the group information from mongodb and send it to the client requesting. 
+]]
+function
+handle_get_group(clientid, channelid, msg)
+info("get group information");
+local ok;
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: %d", msg.gid ));
+	error("\ndb:find_one for group:  failed with : ", msg.gid, err);
+	return;
+end
+local resp = {};
+resp.group 	  = {};
+resp.mesgtype = "response";
+resp.cookie   = cookie;
+--[[
+selectively copy parts of information while leaving the irrelevant.
+]]
+resp.group.gid 				= group.gid;
+resp.group.homedir 			= group.homedir;
+resp.group.organization     = group.organization;
+resp.group.gname     		= group.gname;
+resp.group.description 		= group.description;
+resp.group.admin 			= group.admin;
+resp.group.member_count 	= group.member_count;
+resp.group.join_by_approval = group.join_by_approval;
+resp.group.follower_count   = group.follower_count;
+resp.group.members 			= listcopy(group.members);
+resp.group.followers 		= listcopy(group.followers);
+resp.group.tags 			= listcopy(group.tags);
+resp.group.categories       = listcopy(group.categories);
+resp.group.pending_approval_list = listcopy(group.pending_approval_list);
+resp.group.image_small      = group.small_image;
+resp.group.image_medium     = group.image_medium;
+resp.group.image_large      = group.image_large;
+
+local encbuf = json.encode(resp);
+info("sending to clientid: ",clientid);
+lb.send2client(clientid, -1, encbuf);
+return;
+end
+
+--[[
+edit the group information, only use who created it "admin" can edit the group 
+information.
+]]
+function
+handle_set_group(clientid, channelid, msg)
+info("set group information");
+local ok;
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: ", msg.gid)); 
+	error("\ngetgroupobj() for group:  failed with : ",msg.gid, err);
+	return;
+end
+if msg.uid == group.admin then
+
+	group.description = msg.group.description;
+	group.join_by_approval = msg.group.join_by_approval;
+	group.tags = listcopy(msg.group.tags);
+    group.categories = listcopy(msg.group.categories);
+
+	local image_path = group_home_base_path .. "/" .. msg.group.organization .. "/" .. "groups".. "/" .. group.gname .. "/" .. "profile.png";
+	if not posix.stat(image_path) then
+		error("\nimage file not found :   gname: ",image_path, group.gname);
+		error_to_client(clientid, channelid, string.format("Group profile picture missing, it should have been @  , Pls upload profile pic", image_path));
+	end
+
+	local im = gd.createFromPng(image_path);
+	if im then
+		local mime_str = "data:image/png;base64,";
+		local sw,sh = im:sizeXY();
+		local im2 = gd.createTrueColor(32, 32);
+		gd.copyResampled(im2, im, 0, 0, 0, 0, 32, 32, sh, sw);
+		group.image_small  = mime_str .. base64.encode(im2:pngStr(100));
+
+		local im3 = gd.createTrueColor(48, 48);
+		gd.copyResampled(im3, im, 0, 0, 0, 0, 48, 48, sh, sw);
+		group.image_medium = mime_str .. base64.encode(im3:pngStr(100));
+
+		local im4 = gd.createTrueColor(96, 96);
+		gd.copyResampled(im4, im, 0, 0, 0, 0, 96, 96, sh, sw);
+		group.image_large = mime_str .. base64.encode(im4:pngStr(100));
+    end
+    group:update();
+else
+	error("An unauthorized attempt has been made by uid: to change the group information:", msg.uid);
+	error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+	return;
+end 
+return;
+end
+
+--[[
+only marked as deleted but never actually deleted, kind of zombie.
+FIXME: Delete the group from the group member ship list of all the users 
+as well. This is a huge task.
+]]
+function
+handle_del_group(clientid, channelid, msg)
+info("delete a group");
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: ", msg.gid)); 
+	error("\ngetgroupobj():  failed", msg.gid);
+	return;
+end
+info("group present in system");
+if msg.uid == group.admin then
+    --[[ get all the users in the group and then delete the group from their group list.]]
+    info("command issued by group admin proceeding with deletion");
+    info("removing membership from all the users in the group");
+    for i,uid in ipairs(group.members)
+    do
+        local user = getuserobj(uid);
+        if user ~= nil then
+            remove_item(user.groups, group.gid);
+            user:update();
+        end
+    end
+    info("updating the organization object.");
+    local org = get_org_object_by_name(group.organization);
+    if org then
+        remove_item(org.group_list, group.gid);
+        org:update();
+    end
+    --[[delete the file system folder irrevocably forever.]]
+    info("removing the groups storage folder, irrevocably beyond this point.");
+    os.execute("rm -rf " .. group.homedir);
+    --[[shooting it off the database. ]]
+    info("shooting it off the database for ever.");
+    group_object_delete(group.gid);
+else
+	error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+	return;
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+The user approving the member must be a admin of the group.
+enqueue a notification to the user that his join request is approved
+along with a welcome message.
+]]
+function 
+handle_approve_user(clientid, channelid, msg)
+info("approve user request");
+local ok;
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: %d", msg.gid)); 
+	error("\ngetgroupobj() for group:  failed with : ",msg.gid, err);
+	return;
+end
+if msg.uid == group.admin then
+    info("Approving user for group:", msg.user, msg.gid);
+    local user = getuserobj(msg.user);
+    if user then
+        table.insert(group.members, msg.user);
+        group.member_count = group.member_count + 1;
+        table.insert(user.groups, group.gid);
+        remove_item(group.pending_approval_list, msg.user);
+        user:update();
+        group:update();
+    else
+        error("Invalid user id provided : ", msg.user);
+        error_to_client(clientid, channelid, "There was some internal error , invalid input submitted");
+        return;
+    end
+    info("generating user notification for the approval");
+    send_notification(group.admin, group, "auth", "join_approved", -1, { msg.user }, string.format("Welcome to the group: %s", group.gname), "");
+else
+	error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+	return;
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+The user disapproving the member must be a admin of the group.
+enqueue a notification to the user that his join request is disapproved 
+along with a reason message.
+]]
+function
+handle_disapprove_user(clientid, channelid, msg)
+info("disapprove user request");
+local ok;
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: ", msg.gid )); 
+	error("\ngetgroupobj() for group:  failed with : ",msg.gid, err);
+	return;
+end
+if msg.uid == group.admin then
+    info("disapproving user for group:", msg.user, msg.gid);
+    remove_item(group.pending_approval_list, msg.user);
+    local user = getuserobj(msg.user);
+    if user then 
+        user:update();
+        group:update();
+    else
+        error("Invalid user id provided : ", msg.user);
+        error_to_client(clientid, channelid, "There was some internal error , invalid input submitted");
+        return;
+    end
+    info("generating user notification for the disapproval");
+    send_notification(group.admin, group, "auth", "join_disapproved", -1, { msg.user }, msg.reason, "");
+else
+	error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+	return; 
+end 
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+relay group join requests to the user, the client should only request for groups 
+he is admin.
+]]
+function 
+handle_relay_group_join_requests(clientid, channelid, msg)
+info("handle_relay_group_join_requests ");
+return;
+end
+
+--[[
+Add a member to a certain group. 
+This is invoked when a user hits a join button on the group.
+The user is added to the group member list and 
+the group is added to the list of groups of the user.
+]] 
+function
+handle_group_add_member(clientid, channelid, msg)
+info("member add request to a group", msg.uid, msg.gid);
+local ok;
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: ", msg.gid )); 
+	error("\ngetgroupobj() for group:  failed with : ",msg.gid, err);
+	return;
+end
+if group.join_by_approval == true then
+    info("Group is join by approval and needs admin approval.");
+    table.insert(group.pending_approval_list, msg.uid);
+    group:update();
+    respond_to_client(clientid, channelid, "success");
+    return;
+end 
+table.insert(group.members, msg.uid);
+group.member_count = group.member_count + 1;
+group:update();
+info("user inserted in group member list");
+local user = getuserobj(msg.uid);
+if user then 
+    table.insert(user.groups, msg.gid);
+    user:update();
+else 
+    error("Unable to find user object for uid:", uid);
+    error_to_client(clientid, channelid, "Internal error performing operation , pls retry");
+    return;
+end 
+--[[
+Add this member to all the konversations and then to all the events of the group. 
+This will ensure he can have the previous context of things.
+]]
+local querystr = "{ owner_gid:"..group.gid..", limited: false}";
+local updatestr = "{$push : { followers: ".. msg.uid .."}}";
+ok, err = db:update(akorp_kons_ns(), querystr, updatestr, false, true);
+if not ok and err then
+    error_to_client(clientid, channelid, "Unable to complete the operation , pls retry");
+    error("Unable to update the db, err= ",err);
+end
+info("Added user to all the previous konversation lists.");
+
+--[[
+only he should be able to browse the past events and future events.
+what about future events ? should we send him all the requests for invite ?
+]]
+querystr = "{owner_gid:"..group.gid..", limited: false, personal: false}";
+updatestr = "{$push : { invited: ".. msg.uid .."}}";
+ok, err = db:update(akorp_events_ns(), querystr, updatestr, false, true);
+if not ok and err then
+    error_to_client(clientid, channelid, "Unable to complete the operation , pls retry");
+    error("Unable to update the db, err= ",err);
+end
+info("Added user to the invitee list of all the events.");
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+Remove a member from a certain group. 
+]] 
+function
+handle_group_rem_member(clientid, channelid, msg)
+info("member remove request to a group", msg.uid, msg.gid);
+local ok;
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: ", msg.gid)); 
+	error("\ngetgroupobj() for group:  failed with : ",msg.gid, err);
+	return;
+end
+remove_item(group.members, msg.uid);
+group.member_count = group.member_count - 1;
+group:update();
+local user = getuserobj(msg.uid);
+if user then
+    remove_item(user.groups, group.gid);
+    user:update();
+else
+    error("Unable to find the user: ", msg.uid);
+    error_to_client(clientid, channelid, "Unable to perform requested operation, some internal error.");
+end
+info("removing the user from the follower list of all past konversations.");
+local querystr = "{ owner_gid:"..group.gid..", limited: false}";
+local updatestr = "{$pop : { followers: ".. msg.uid .."}}";
+ok, err = db:update(akorp_kons_ns(), querystr, updatestr, false, true);
+if not ok and err then
+    error_to_client(clientid, channelid, "Unable to complete the operation , pls retry");
+    error("Unable to update the db, err= ",err);
+end
+info("removing user from all the invitee list of future events");
+querystr = "{owner_gid:"..group.gid..", limited: false, personal: false}";
+updatestr = "{$pop : { invited: ".. msg.uid .."}}";
+ok, err = db:update(akorp_events_ns(), querystr, updatestr, false, true);
+if not ok and err then
+    error_to_client(clientid, channelid, "Unable to complete the operation , pls retry");
+    error("Unable to update the db, err= ",err);
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+Add the user to the list of followers of the group. 
+]]
+function 
+handle_follow_group(clientid, channelid, msg)
+info("follow group request from user");
+local ok;
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: ", msg.gid)); 
+	error("\ngetgroupobj() for group:  failed with : ",msg.gid, err);
+	return;
+end
+table.insert(group.followers, msg.uid);
+group.follower_count = group.follower_count + 1;
+ok, err = db:update(akorp_group_ns(), {gname = msg.gid}, group, false, false);
+if not ok and err then
+	error_to_client(clientid, channelid, "There was some internal error on the server pls try again"); 
+	error("\ndb:update failed with : ",err);
+	return;
+end
+respond_to_client(clientid, channelid, "success");
+return; 
+end 
+
+--[[
+Remove the user from the list of followers of the group. 
+]]
+function
+handle_unfollow_group(clientid, channelid, msg)
+info("unfollow group request from user");
+local ok;
+local group = getgroupobj(msg.gid);
+if not group then
+	error_to_client(clientid, channelid, string.format("Unable to find group: ", msg.gid)); 
+	error("\ngetgroupobj() for group:  failed with : ",msg.gid, err);
+	return;
+end
+table.remove(group.followers, msg.uid);
+group.follower_count = group.follower_count - 1;
+ok, err = db:update(akorp_group_ns(), {gname = msg.gid}, group, false, false);
+if not ok and err then
+	error_to_client(clientid, channelid, "There was some internal error on the server pls try again"); 
+	error("\ndb:update failed with : ",err);
+	return;
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+send an error back to client.
+]]
+function 
+error_to_client(clientid, channelid, estring)
+local err    = {};
+err.mesgtype = "error";
+err.cookie   = cookie; 
+err.error    = estring; 
+lb.send2client(clientid, -1, json.encode(err));
+return;
+end 
+
+--[[
+send a response to client.
+]]
+function 
+respond_to_client(clientid, channelid, status)
+local resp    = {};
+resp.mesgtype = "response";
+resp.cookie   = cookie; 
+resp.status   = status; 
+lb.send2client(clientid, -1, json.encode(resp));
+return;
+end
+
+--[[
+remove the last 5 characters after base64 encoding. 
+FIXME: not sure this is safe or not. but works for now
+revisit this in future after more discussions. 
+]]
+function
+trim_hash(hash)
+return string.sub(hash, 1, string.len(hash) - 6);
+end
+
+--[[
+Hash the password from the user submitted one.
+for this we use uid as a salt.
+]]
+function
+password_hash(user, password)
+return luabridge.sha512hash(password .. user.salt);
+end
+
+--[[
+Given the user object and the password submitted, validate the password 
+and give a go or no-go.
+]]
+function
+password_valid(user, password)
+local hash = password_hash(user, password);
+if hash == user.password then
+    return true;
+end
+error("user.salt    : ", user.salt);
+error("hash stored  : ", user.password);
+error("hash computed: ", hash);
+return false;
+end
+
+
+--[[
+generate an authentication token. a random cryptographic string. 
+]]
+function
+generateauthtoken()
+local token = lb.randstring();
+return token;
+end
+
+--[[
+Handle user login.
+update the clientid of the user in the mongodb. 
+send the user information back to him. 
+FIXME: in future insert uname and password checking if the user has 
+password.
+]]
+--[[
+Check if there is a auth token in the request.
+Check if this is auth token by us previously issued. 
+delete any previously generated tokens with the username.
+if it is then get the user name from the token and 
+proceed the login.
+if remember_me is set then send a new token along with the 
+response and store it in the database.
+]]
+function
+handle_user_login(clientid, channelid, msg)
+local user = nil;
+local auth_token = "";
+info("user login message", msg.uname);
+if msg.auth_token ~= "" then
+    info("token based login:");
+    user = getuserwithtoken(msg.auth_token);
+    if not user then
+        error_to_client(clientid, channelid, string.format("Authentication denied, Invalid token provided.")); 
+        error("\nan invalid authentication  token is provided for login", msg.token);
+        return;
+    end
+else
+    info("normal login:");
+    user = getuserwithname(msg.uname);
+    if not user then
+        error_to_client(clientid, channelid, string.format("Invalid user name or password given, Please check.")); 
+        error("\ndb:find_one for user:  failed", msg.uname);
+        return;
+    end
+    --[[
+    Check the password submitted by the user.
+    ]]
+    info("validating passwd");
+    if not password_valid(user, msg.password) then
+        error_to_client(clientid, channelid, string.format("Invalid user name or password given, Please check.")); 
+        error("\nFailed login attempt with wrong password.");
+        return;
+    end
+end
+
+--[[remove the session if already exists. ]]
+info("checking for duplicate session");
+local ocacheClientId = lb.getclientid(user.uid);
+if  ocacheClientId ~= 0 then
+	info("\nFound a stale clientid:   for uid:   in the ocache removing ...", ocacheClientId, user.uid);
+	error("User:  already logged in system closing the old connection and removing the session", msg.uname);
+	error_to_client(clientid, channelid, string.format("User:  already logged in system", msg.uname));
+    lb.send2gw(CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_DISCONNECT, lb.getclientid(user.uid), -1);
+	lb.remclienttuple(user.uid);
+end
+
+info("persisting the cookie");
+if msg.rememberme == true then
+    auth_token = generateauthtoken();
+    user.auth_token = auth_token;
+    user:update();
+end
+
+info("forming the response");
+local resp    = {};
+resp.user 	  = {};
+--[[These fields may differ from that in the get user request ]]
+resp.user.uid 				= user.uid;
+resp.user.uname     		= user.uname;
+resp.user.first_name 		= user.first_name;
+resp.user.last_name 		= user.last_name;
+resp.user.middle_name 		= user.middle_name;
+resp.user.dept 				= user.dept;
+resp.user.homedir			= user.homedir;
+resp.user.mob 				= user.mob;
+resp.user.work 				= user.work;
+resp.user.home 				= user.home;
+resp.user.fax 				= user.fax;
+resp.user.sex 				= user.sex;
+resp.user.interests 		= listcopy(user.interests);
+resp.user.pager 			= user.pager;
+resp.user.homeaddress 		= user.homeaddress;
+resp.user.workaddress 		= user.workaddres;
+resp.user.dob 				= user.dob;
+resp.user.organization 		= user.organization;
+resp.user.status_line 		= user.status_line;
+resp.user.email 			= user.email;
+resp.user.homepage 			= user.homepage;
+resp.user.manager 			= user.manager;
+resp.user.info 				= user.info;
+resp.user.jobtitle 			= user.jobtitle;
+resp.user.image_small  		= user.image_small;
+resp.user.image_medium 		= user.image_medium;
+resp.user.image_large 		= user.image_large;
+resp.user.bookmarks         = listcopy(user.bookmarks);
+resp.user.groups            = listcopy(user.groups);
+resp.user.auth_token        = auth_token;
+
+resp.mesgtype = "response";
+resp.cookie   = cookie;
+--install the session in the ocache for other services to work.
+lb.putclienttuple(user.uid, clientid, -1);
+local encbuf  = json.encode(resp);
+if encbuf then
+    info("sending the response");
+	lb.send2client(clientid, -1, encbuf);
+else 
+	error_to_client(clientid, channelid, "There was some internal error on the server pls try again"); 
+	error("\nfailed to encode string");
+end
+--[[send a user online event to all the members of the group. ]]
+--[[
+local group = getgroupobj(user.gid);
+if not group then
+	error_to_client(clientid, channelid, "There was some internal error on the server pls try again"); 
+	error("\nGroup missing with given gid: ", user.gid);
+	return; 
+end
+]]
+bcast_user_status_update(user, get_org_object_by_name(getuserobj(user.uid).organization), "online");
+return;
+end
+
+--[[ broadcast a new user registration event to all the group members. ]]
+function
+bcast_new_user_event(u, group)
+local event = {};
+event.mesgtype  = "event";
+event.eventtype = "new_user";
+event.user 		= u;
+info("New user event broadcast to group members");
+for i,uid in ipairs(group.members)
+do
+	if uid ~= u.uid then 
+		lb.send2user(uid, json.encode(event));
+	end
+end
+return;
+end
+
+--[[ broadcast the user offline event to all the group members. ]]
+function
+bcast_user_status_update(u, o, status)
+local event = {};
+event.mesgtype  = "event";
+event.eventtype = "status_update";
+event.user 		= u.uid;
+event.status 	= status;
+event.status_line = u.status_line;
+info("User status broadcast to group members");
+for i,uid in ipairs(o.user_list)
+do
+	if uid ~= u.uid then 
+		lb.send2user(uid, json.encode(event));
+	end
+end
+return;
+end
+
+--[[
+Inform all the services that this particular user has logged out.
+so that they can cleanup and cancel the operations on his behalf. 
+The GUI already warns the user if there are pending operations 
+in progress.
+]]
+function
+handle_user_logout(clientid, channelid, msg)
+info("logout message: ", msg.uid);
+if msg.uid ~= 0 then
+	if not lb.getclientid(msg.uid) then
+		error_to_client(clientid, channelid, string.format("User not logged in", msg.uid));
+		error("User not logged in", msg.uid);
+		return;
+	end
+    --[[get the org object and send a logout event to all the members of the organization.]]
+    info("broadcasting user offline status to all the online org members");
+	bcast_user_status_update(getuserobj(msg.uid), get_org_object_by_name(getuserobj(msg.uid).organization), "offline");
+    info("logout response sent back to user");
+    respond_to_client(clientid, channelid, "success");
+    info("removing client tuple from the session cache.");
+	lb.remclienttuple(msg.uid);
+end
+return;
+end
+
+--[[ 
+Users status has changed so broadcast it to all the group memebers. 
+]]
+function 
+handle_status_update(msg)
+info("Status update message from user: ", msg.user);
+local statusUpdate = {};
+statusUpdate.mesgtype 	   	  = msg.mesgtype;
+statusUpdate.eventtype 		  = msg.eventtype;
+statusUpdate.user 			  = msg.user;
+statusUpdate.status 		  = msg.status;
+local encbuf 			  	  = json.encode(statusUpdate);
+if not encbuf then
+	error("Failed to decode json string: ", statusUpdate);
+	return;
+end
+local userobj = getuserobj(msg.user);
+if userobj then
+    bcast_user_status_update(userobj, get_org_object_by_name(userobj.organization), msg.status);
+else
+	error("Failed to find user object of the user: ", msg.sndr);
+	return;
+end
+return;
+end
+
+--[[
+Add a bookmark to the users collection. 
+]]
+function
+handle_add_bookmark(clientid, channelid, msg)
+local user = getuserobj(msg.uid);
+if user and msg.bookmark then
+    if not item_present(user.bookmarks, msg.bookmark) then
+        table.insert(user.bookmarks, msg.bookmark);
+        user:update();
+        respond_to_client(clientid, channelid, "success");
+    end
+else 
+    if not user then
+        error("failed to find user object for the user : ", msg.uid);
+        error_to_client(clientid, channelid, string.format("failed to find the user: invalid user id in the request"));
+    end
+end
+return;
+end
+
+--[[
+delete a bookmark from the users collection. 
+]]
+function
+handle_delete_bookmark(clientid, channelid, msg)
+local user = getuserobj(msg.uid);
+if user and msg.bookmark then
+    if item_present(user.bookmarks, msg.bookmark) then
+        remove_item(user.bookmarks, msg.bookmark);
+        user:update();
+        respond_to_client(clientid, channelid, "success");
+    end
+else
+    if not user then
+        error("failed to find user object for the user :  ", msg.uid);
+        error_to_client(clientid, channelid, string.format("failed to find the user: invalid user id in the request"));
+    end
+end
+return;
+end
+
+--[[
+return the bookmark list to the user.
+]]
+function
+handle_get_bookmark(clientid, channelid, msg)
+local user = getuserobj(msg.uid);
+if user then
+    local response = {};
+    response.mesgtype       = "response";
+    response.cookie         = msg.cookie;
+    response.bookmark_list  = listcopy(user.bookmarks);
+    local encbuf            = json.encode(response);
+    if encbuf then
+        lb.send2user(msg.uid, encbuf);
+    else
+        error("failed to encode the message.");
+    end
+else
+    error("failed to find user object for the user :  ", msg.uid);
+    error_to_client(clientid, channelid, string.format("failed to find the user: invalid user id in the request"));
+end
+return;
+end
+
+--[[
+Add a new category to the list of konversation category for the group. 
+only done by admin. 
+]] 
+function 
+handle_add_category(clientid, channelid, msg)
+info("Add category request for kons");
+local group = getgroupobj(msg.gid);
+if group == nil then 
+    error("group object missing for given group id", msg.gid);
+	error_to_client(clientid, channelid, "Invalid group id sent by client"); 
+	return;
+end
+if msg.uid == group.admin then
+	if not item_present(group.categories, msg.category) then
+        table.insert(group.categories, msg.category);
+        group:update();
+        respond_to_client(clientid, channelid, "success");
+		return;
+	end
+else
+    error("an authorized operation was attempted by user", msg.uid);
+	error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+	return;
+end 
+return;
+end
+
+
+--[[
+remove an existing category from the list of konversation categories. for the 
+group. only done by admin.
+]]
+function
+handle_delete_category(clientid, channelid, msg)
+info("delete category request for kons");
+local group = getgroupobj(msg.gid);
+if group == nil then 
+    error("group object missing for given group id", msg.gid);
+	error_to_client(clientid, channelid, "Invalid group id sent by client"); 
+	return;
+end
+if msg.uid == group.admin then
+	if item_present(group.categories, msg.category) then
+        remove_item(group.categories, msg.category);
+        group:update();
+        respond_to_client(clientid, channelid, "success");
+		return;
+    else
+        respond_to_client(clientid, channelid, "success");
+		return;
+	end
+else
+    error("an authorized operation was attempted by user", msg.uid);
+	error_to_client(clientid, channelid, "You are not authorized to do this operation"); 
+	return;
+end
+return;
+end
+
+--[[
+The user has checked out the notification so delete the notification from the 
+pending notification queue.
+]]
+function
+handle_check_notification(clientid, channelid, msg)
+local notif = getnotifobj(msg.id);
+if notif then
+    if item_present(notif.unchecked, msg.uid) then
+        remove_item(notif.unchecked, msg.uid);
+        info("user removed from the unchecked list");
+        info(msg.id);
+        table.insert(notif.checked, msg.uid);
+        notif:update();
+    end
+else
+    error("Unable to retrieve the notification object from the database");
+    error("unable to retrieve the notification object from the database id: ", tostring(msg.id));
+end
+local resp    = {};
+resp.mesgtype = "response";
+if notif.category == "kons" then
+    resp.count = 0;
+end
+resp.cookie   = cookie;
+lb.send2client(clientid, -1, json.encode(resp));
+return;
+end
+
+
+--[[
+mark all unchecked as read for the user. 
+user will be in the unchecked list of the notifications.
+]]
+function
+handle_mark_all_read(clientid, channelid, msg)
+local querystr = "{ category : " .. "\"" .. msg.category .. "\"" .. "," .. "unchecked :{ $in : [".. msg.uid .. "]}}"; 
+local updatestr = "{$push : { checked : ".. msg.uid .."}, $pull : { unchecked : ".. msg.uid .."}}";
+info("querystr:  ", querystr);
+info("updatestr:  ", updatestr);
+local ok , err = db:update(akorp_notif_ns(), querystr, updatestr, true, true);
+if not ok and err then
+    error_to_client(clientid, channelid, "Unable to complete the operation , pls retry");
+    error("Unable to update the db, err= ",err);
+end
+return;
+end
+
+--[[
+relay notifications relay all the unchecked ones to the user 
+or if there is a marker relay the ones older than the marker. 
+]]
+function
+handle_relay_notification(clientid, channelid, msg)
+info("notification relay request");
+local category = msg.category;
+local timestamp = 0;
+local querystr = "";
+local limit = 10;
+info("groupid:", msg.gid);
+if msg.marker then
+    querystr = "{$query : { owner_gid:".. msg.gid ..",category: ".. "\"" .. msg.category .. "\"" .. ", " .. " timestamp : { $lt : ".. msg.marker .. "}}, $orderby : { timestamp : -1}}";
+else
+    querystr = "{$query : { owner_gid:".. msg.gid ..",category: ".. "\"" .. msg.category .. "\"" .. ", " .."$or:" .. "[" .. "{" .. "unchecked :{ $in : [".. msg.uid .. "]}}, {checked :{ $in : [".. msg.uid .. "]}}]}, $orderby : { timestamp : -1}}";
+end
+info("querystr:  ", querystr);
+local q, err = db:query(akorp_notif_ns(), querystr, limit);
+if err then
+    error("Unable to perform query on db, err= ", err);
+    return;
+end
+for result in q:results() do
+--[[ check whether the user has already checked or not and send active status to the user. ]]
+    local response = {};
+    response.mesgtype                = "response";
+    response.cookie                  = msg.cookie;
+    response.result                  = listcopy(result);
+    if item_present(result.unchecked, msg.uid) then 
+        response.result.active           = true;
+        --info("notification active for the user");
+    else
+        response.result.active           = false;
+        --info("notification in active for the user");
+    end
+    local encbuf = json.encode(response);
+    if encbuf then
+        lb.send2user(msg.uid, encbuf);
+    else
+        error("failed to encode the message ");
+    end
+end
+return;
+end
+
+--[[
+relay the activity for a requested object.
+There can be multiple activity objects for a single object being tracked. 
+]]
+function
+handle_relay_activity(clientid, channelid, msg)
+info("activity relay request");
+local timestamp = 0;
+local querystr = "";
+local limit = 10;
+if msg.marker then
+    querystr = "{$query:{id: ".. "\"" .. msg.id .. "\"" .. "," .. "timestamp : { $lt : ".. msg.marker .. "}}, $orderby : { timestamp : -1}}";
+else
+    querystr = "{$query:{id: ".. "\"" .. msg.id .. "\"" .. "}, $orderby : { timestamp : -1}}";
+end
+info("querystr:  ", querystr);
+local q, err = db:query(akorp_activity_ns(), querystr, limit);
+if err then
+    error("Unable to perform query on db, err= ", err);
+    return;
+end
+for result in q:results() do
+    local response = {};
+    response.mesgtype                = "response";
+    response.cookie                  = msg.cookie;
+    response.result                  = listcopy(result);
+    local encbuf = json.encode(response);
+    if encbuf then
+        lb.send2user(msg.uid, encbuf);
+    else
+        error("failed to encode the message ");
+    end
+end
+return;
+end
+
+function
+handle_relay_pending_requests(clientid, channelid, msg)
+info("relay pending request");
+local category = msg.category;
+local timestamp = 0;
+local querystr = "";
+local limit = 10;
+local now = lb.utcnow();
+
+if category == "calendar" then
+    if msg.marker then
+        querystr = "{$query:{tstart_unix_time:{$gte:"..msg.marker.."}"..",invited:{$in:[".. msg.uid .."]}, owner_gid:"..msg.gid..", $and:[{accepted:{$nin:["..msg.uid.."]}},{denied:{$nin:["..msg.uid.."]}}]},$orderby:{create_timestamp:-1}}";
+    else
+        querystr = "{$query:{tstart_unix_time:{$gte:"..now.."}"..",invited:{$in:[".. msg.uid .."]}, owner_gid:"..msg.gid..", $and:[{accepted:{$nin:["..msg.uid.."]}},{denied:{$nin:["..msg.uid.."]}}]},$orderby:{create_timestamp:-1}}";
+    end
+    info("querystr:  ", querystr);
+    local q, err = db:query(akorp_events_ns(), querystr, limit);
+    if err then
+        error("Unable to perform query on db, err= ", err);
+        return;
+    end
+    info("walking the results");
+    for result in q:results() do
+        info("iterating..", result.id);
+        local request = db:find_one(akorp_request_ns(), {oid = result.id});
+        if request == nil then 
+            error("Unable to find the corresponding request object");
+        else
+            if item_present(request.requestee, msg.uid) then
+                local response = {};
+                response.mesgtype                = "response";
+                response.cookie                  = msg.cookie;
+                response.result                  = {};
+                response.result.invite           = {};
+                response.result.invite = listcopy(request);
+                response.result.invite.vevent = {};
+                response.result.invite.vevent = listcopy(result);
+                local encbuf = json.encode(response);
+                if encbuf then
+                    lb.send2user(msg.uid, encbuf);
+                else
+                    error("failed to encode the message ");
+                end
+            else
+                error("user not in the requestee list");
+            end
+        end
+    end
+end
+
+--[[
+if msg.marker then
+    querystr = "{$query:{category:".."\""..msg.category.."\""..",".."create_timestamp:{$lt:"..msg.marker.."},".."$or:[{requestee:{$in:["..msg.uid.."]}}, {granted:{$in:["..msg.uid.."]}}]},$orderby:{create_timestamp:-1}}";
+else
+    querystr = "{$query:{category:".."\""..msg.category.."\""..",".."$or:[{requestee:{$in:["..msg.uid.."]}},{granted:{$in:["..msg.uid.."]}}]},$orderby:{create_timestamp:-1}}";
+end
+info(querystr);
+local q, err = db:query(akorp_request_ns(), querystr, limit);
+if err then
+    error("Unable to perform query on db, err= ", err);
+    return;
+end
+
+for result in q:results() do
+    local response = {};
+    response.mesgtype                = "response";
+    response.cookie                  = msg.cookie;
+    response.result                  = {};
+    if category == "calendar" then 
+        response.result.invite = {};
+    end
+    response.result.invite = listcopy(result);
+    if category == "calendar" then
+        response.result.invite.vevent = {};
+        local vevent = get_vevent_object(result.oid);
+        if vevent then
+            response.result.invite.vevent = listcopy(vevent);
+        end
+    end
+    local encbuf = json.encode(response);
+    if encbuf then
+        lb.send2user(msg.uid, encbuf);
+    else
+        error("failed to encode the message ");
+    end
+end
+]]
+return;
+end
+
+--[[
+return an object with all the pending notification counts.
+]]
+function
+handle_get_notification_counters(clientid, channelid, msg)
+info("get_notification_count:");
+local count = 0;
+local querystr = "{owner_gid:".. msg.gid .. ",category:".. "\"" .. msg.category .. "\"" .. ", " .. "unchecked :{ $in : [".. msg.uid .. "]}}";
+info("querystr:  ", querystr);
+local resp    = {};
+resp.mesgtype = "response";
+resp.count    = db:count(akorp_notif_ns(), querystr);
+resp.cookie   = cookie;
+info("sending count to client", resp.count);
+local encbuf = json.encode(resp);
+if encbuf then 
+    lb.send2user(msg.uid, encbuf);
+else
+    error("failed to encode the message");
+end
+return;
+end
+
+--[[
+create an organization object.
+create a new subvolume group for the organization in the btrfs file system.
+and mark the permissions accordingly.
+]]
+function
+handle_org_create(clientid, channelid, msg)
+info("Org create request", msg.org);
+local org = get_org_object_by_name(msg.org);
+if org then
+    error("A similar organization object exists with the same name.");
+    error_to_client(clientid, channelid, "There is already an organization with the same name");
+    return;
+end
+info("Trying to allocate a new organization object. hold on..");
+org = org_object.new();
+info("Successfully allocated new organization object.");
+org.admin = 0;
+org.name  = msg.org;
+org.filesystempath = fmgr_base_folder_dir .. "/" .. msg.org;
+--[[
+Create the new subvolume at the org file system path. 
+send back the success status code.
+]]
+info("Fmgr base folder directory: ", fmgr_base_folder_dir);
+info("Creating directory for the new org : ", org.filesystempath);
+if posix.stat(org.filesystempath) == nil then 
+    local rc = posix.mkdir(org.filesystempath);
+    if rc ~= 0 then 
+        error("unable to create the directory for org: ", msg.org);
+        error_to_client(clientid, channelid, "Unable to create organization, some internal error, Pls retry");
+        return;
+    end
+end
+--[[
+set the limits of the organization folder this is only required in the cloud deployment 
+XXX: actually the below values need to be read and written back to the fileobject. since 
+this is a fresh creation we are initiailizing them to defaults.
+]]
+fattr =
+{
+    locked = false,
+    isPrivate = false,
+    isShared = false,
+    fqpn = org.filesystempath,
+    oid = "",
+    state = "open",
+    kons = "",
+    description = "",
+    markedPrivateBy = 0,
+    lockedBy = 0,
+    ownerUid = 0,
+    ownerGid = 0,
+    followers = {},
+    groupsSharedWith = {}, 
+    usersSharedWith = {},
+    taglist = {},
+    folderLimitMsb = 0,
+    folderLimitLsb = 0,
+    folderUsageMsb = 0,
+    folderUsageLsb = 0
+};
+
+--[[ only valid under cloud deployment. ]]
+if cloudDeployment then
+    fattr.folderLimitLsb = 1073741824,
+    lb.setfileobject(org.filesystempath, json.encode(fattr));
+end
+if posix.stat(org.filesystempath .. "/" .. "users") == nil then
+info("Creating 'users' directory under the new org : ", org.filesystempath);
+    local rc = posix.mkdir(org.filesystempath .. "/" .. "users");
+    if rc ~= 0 then 
+        error("unable to create the users directory under org: ", msg.org);
+        error_to_client(clientid, channelid, "Unable to create organization, some internal error, Pls retry");
+        return;
+    end
+    if cloudDeployment then
+        lb.setfileobject(org.filesystempath .. "/" .. "users", json.encode(fattr));
+    end
+end
+if posix.stat(org.filesystempath .. "/" .. "groups") == nil then
+info("Creating 'groups' directory under the new org : ", org.filesystempath);
+    local rc = posix.mkdir(org.filesystempath .. "/" .. "groups");
+    if rc ~= 0 then 
+        error("unable to create the groups directory under org: ", msg.org);
+        error_to_client(clientid, channelid, "Unable to create organization, some internal error, Pls retry");
+        return;
+    end
+    if cloudDeployment then
+        lb.setfileobject(org.filesystempath .. "/" .. "groups", json.encode(fattr));
+    end
+end
+
+--[[issue an update to store the newly created org object. ]]
+org:update();
+info("Stored the new organization object in db");
+local resp = {};
+resp.org = {};
+resp.mesgtype = "response";
+resp.cookie   = cookie;
+--[[
+selectively copy parts of information while leaving the irrelevant.
+]]
+resp.org.id             = org.id;
+resp.org.group_list     = listcopy(org.group_list);
+resp.org.user_list      = {};
+resp.org.admin          = org.admin;
+resp.org.name           = org.name;
+resp.org.create_timestamp = org.create_timestamp;
+resp.org.pending_email_invites = listcopy(org.pending_email_invites);
+resp.org.domain         = org.domain;
+resp.org.stunserver     = org.stunserver;
+resp.org.small_image    = org.small_image;
+resp.org.image_medium   = org.image_medium;
+resp.org.image_large    = org.image_large;
+resp.org.image_original = org.image_original;
+local encbuf = json.encode(resp);
+if encbuf then 
+    info("sent reponse to the client");
+    lb.send2client(clientid, -1, encbuf);
+else    
+    error("json encode failed to the response object");
+    return;
+end
+return;
+end
+
+--[[
+delete an organization object.
+]]
+function
+handle_org_delete(clientid, channelid, msg)
+local org = get_org_object(msg.oid);
+if not org then
+    error_to_client(clientid, channelid, "There is no organization with the given id.");
+    error("Unable to find any organization with the id given");
+    return;
+end
+org_object_delete(msg.oid);
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+modify an org object information.
+]]
+function
+handle_org_edit(clientid, channelid, msg)
+local org = get_org_object(msg.oid);
+if not org then
+    error_to_client(clientid, channelid, "There is no organization with the given id.");
+    error("Unable to find any organization with the id given");
+    return;
+end
+org:update();
+return;
+end
+
+function
+handle_create_org_invite(clientid, channelid, msg)
+local org = get_org_object(msg.oid);
+if org then
+    --[[ add it to the pending email invites and then send an email to the user. ]]
+    local invite_id = lb.genuuid();
+    local email_template = "";
+    table.insert(org.pending_email_invites, msg.email);
+    org:update();
+else
+    error_to_client(clientid, channelid, "Failed to send invite to the new user, Please retry the operation.");
+    return;
+end
+return;
+end
+
+--[[
+set the status line of the user in the database and then broadcast the same to all. 
+]]
+function
+handle_set_status_line(clientid, channelid, msg)
+info("set status line request");
+local user = getuserobj(msg.uid);
+if user then
+    user.status_line = msg.status_line;
+    user:update();
+end
+bcast_user_status_update(user, get_org_object_by_name(user.organization), "online");
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+function
+getfsusage(opath)
+local fattr = json.decode(luabridge.getfileobject(opath));
+if fattr then
+    folderLimit = bit.bor(bit.lshift(fattr.folderLimitMsb, 32), fattr.folderLimitLsb);
+    folderUsage = bit.bor(bit.lshift(fattr.folderUsageMsb, 32), fattr.folderUsageLsb);
+end
+return ((folderUsage*100)/(folderLimit)), tostring(folderLimit), tostring(folderUsage);
+end
+
+--[[
+get the organization object and send it back.
+]]
+function
+handle_get_org(clientid, channelid, msg)
+info("handle get org request: ", msg.oid);
+local org = get_org_object_by_name(msg.oid);
+if org then
+    local resp = {};
+    resp.org = {};
+    resp.mesgtype = "response";
+    resp.cookie   = cookie;
+    --[[
+    selectively copy parts of information while leaving the irrelevant.
+    ]]
+    resp.org.id             = org.id;
+    resp.org.group_list     = listcopy(org.group_list);
+    resp.org.user_list      = listcopy(org.user_list);
+    resp.org.admin          = org.admin;
+    resp.org.name           = org.name;
+    resp.org.create_timestamp = org.create_timestamp;
+    resp.org.pending_email_invites = listcopy(org.pending_email_invites);
+    resp.org.domain         = org.domain;
+    resp.org.stunserver     = org.stunserver;
+    resp.org.small_image    = org.image_small;
+    resp.org.image_medium   = org.image_medium;
+    resp.org.image_large    = org.image_large;
+    resp.org.image_original = org.image_original;
+    --resp.org.fsusage        = getfsusage(org.filesystempath);
+    resp.org.fsusage        = 0;
+    local encbuf = json.encode(resp);
+    if encbuf then 
+        lb.send2client(clientid, channelid, encbuf);
+    else    
+        error("json encode failed to the response object");
+        return;
+    end
+else
+    error_to_client(clientid, channelid, "There is no organization with the given id requested.");
+    return;
+end
+return;
+end
+
+--[[
+Change the password of the user. requires the old password 
+and the new password. 
+]]
+function
+handle_change_password(clientid, channelid, msg)
+info("change password request from user: ", msg.uid);
+local user = getuserobj(msg.uid);
+if user then
+    if password_valid(user, msg.old_password) then
+        user.password = password_hash(user, msg.new_password);
+        user:update();
+        respond_to_client(clientid, channelid, "success");
+        info("User password updated for user:", msg.uid);
+        return;
+    else
+        error_to_client(clientid, channelid, "Old password submitted by user is invalid");
+        error("Old password submitted by user is invalid", msg.uid);
+        return;
+    end
+else
+    error("Invalid user id given by the client:", msg.uid);
+    error_to_client(clientid, channelid, "Invalid userid given");
+    return;
+end
+return;
+end
+
+--[[
+reset the password of a particular user. 
+]]
+function
+handle_reset_password(clientid, channelid, msg)
+info("reset password request from user: ", msg.uid);
+local org = get_org_object_by_name(msg.org);
+if org == nil then 
+    error("invalid organization name given in request:", msg.org);
+    error_to_client(clientid, channelid, "Invalid data sent with the request");
+    return;
+end
+if org.admin ~= msg.uid then
+    error("Reset password operation called with insufficient privileges:", msg.uid);
+    error_to_client(clientid, channelid, "You donot have enough privileges to perform this operation");
+    return;
+end
+local user = getuserobj(msg.user);
+if user then
+        user.password = password_hash(user, msg.new_password);
+        user:update();
+        respond_to_client(clientid, channelid, "success");
+        info("User password updated for user:", msg.user);
+        return;
+else
+    error("Invalid user id given by the client:", msg.user);
+    error_to_client(clientid, channelid, "Invalid userid given");
+    return;
+end
+return;
+end
+
+--[[
+reset the admin password for a particular organization.
+this request only comes from the utility packaged with the 
+server.
+]]
+function
+handle_reset_admin_password(clientid, channelid, msg)
+info("reset admin password request ");
+local org = get_org_object_by_name(msg.org);
+if org == nil then
+    error("invalid organization name given in request:", msg.org);
+    error_to_client(clientid, channelid, "Invalid data sent with the request");
+    return;
+end
+local user = getuserobj(org.admin);
+if user then
+        user.password = password_hash(user, msg.new_password);
+        user:update();
+        respond_to_client(clientid, channelid, "success");
+        info("Admin password reset successfully:");
+        return;
+else
+    error_to_client(clientid, channelid, "Internal error cannot reset admin password");
+    return;
+end
+return;
+end
+
+--[[
+get the file system usage for the organization. 
+]]
+function
+handle_get_fsusage(clientid, channelid, msg)
+info("get file system usage user: ", msg.uid, msg.oid);
+local org = get_org_object_by_name(msg.oid);
+if org then
+    local resp = {};
+    resp.mesgtype = "response";
+    resp.cookie   = cookie;
+    --resp.fsusage, resp.folderLimit, resp.folderUsage = getfsusage(org.filesystempath);
+    resp.fsusage, resp.folderLimit, resp.folderUsage = 0;
+    local encbuf = json.encode(resp);
+    if encbuf then
+        lb.send2client(clientid, -1, encbuf);
+    else
+        error("json encode failed to the response object");
+        return;
+    end
+else
+    error_to_client(clientid, channelid, "There is no organization with the given id.");
+    error("Unable to find any organization with the id given", msg.oid);
+    return;
+end
+return;
+end
+
+--[[
+handle the message from the client while sending back the response 
+use the same client id we recvd from the client.
+]]
+function
+handle_mesg(clientid, channelid, msg)
+	if msg.mesgtype == "request" then 
+		cookie   = msg.cookie; 
+        info("new request.");
+		if (msg.request == "adduser") then handle_add_user(clientid, channelid, msg); 
+		elseif (msg.request == "getuser") then  handle_get_user(clientid, channelid, msg); 
+		elseif (msg.request == "setuser") then  handle_set_user(clientid, channelid, msg); 
+		elseif (msg.request == "change_password") then handle_change_password(clientid, channelid, msg); 
+		elseif (msg.request == "reset_password") then handle_reset_password(clientid, channelid, msg); 
+		elseif (msg.request == "reset_admin_password") then handle_reset_admin_password(clientid, channelid, msg); 
+		elseif (msg.request == "deluser") then  handle_del_user(clientid, channelid, msg);
+		elseif (msg.request == "addgroup") then handle_add_group(clientid, channelid, msg);  
+		elseif (msg.request == "getgroup") then handle_get_group(clientid, channelid, msg); 
+		elseif (msg.request == "setgroup") then handle_set_group(clientid, channelid, msg); 
+		elseif (msg.request == "delgroup") then handle_del_group(clientid, channelid, msg); 
+		elseif (msg.request == "add_member") then handle_group_add_member(clientid, channelid, msg);  
+		elseif (msg.request == "rem_member") then handle_group_rem_member(clientid, channelid, msg);  
+		elseif (msg.request == "follow_group") then handle_follow_group(clientid, channelid, msg);  
+		elseif (msg.request == "unfollow_group") then handle_unfollow_group(clientid, channelid, msg);  
+		elseif (msg.request == "approve_user") then handle_approve_user(clientid, channelid, msg); 
+        elseif (msg.request == "pending_approvals") then handle_relay_group_join_requests(clientid, channelid, msg);
+		elseif (msg.request == "disapprove_user") then handle_disapprove_user(clientid, channelid, msg); 
+		elseif (msg.request == "login") then handle_user_login(clientid, channelid, msg); 
+		elseif (msg.request == "logout") then handle_user_logout(clientid, channelid, msg); 
+        elseif (msg.request == "add_bookmark") then handle_add_bookmark(clientid, channelid, msg);
+        elseif (msg.request == "delete_bookmark") then handle_delete_bookmark(clientid, channelid, msg);
+        elseif (msg.request == "get_bookmark_list") then handle_get_bookmark(clientid, channelid, msg);
+        elseif (msg.request == "add_category") then handle_add_category(clientid, channelid, msg);
+        elseif (msg.request == "delete_category") then handle_delete_category(clientid, channelid, msg);
+        elseif (msg.request == "check_notification") then handle_check_notification(clientid, channelid, msg);
+        elseif (msg.request == "mark_all_read") then handle_mark_all_read(clientid, channelid, msg);
+        elseif (msg.request == "relay_notification") then handle_relay_notification(clientid, channelid, msg);
+        elseif (msg.request == "relay_activity") then handle_relay_activity(clientid, channelid, msg);
+        elseif (msg.request == "relay_pending_requests") then handle_relay_pending_requests(clientid, channelid, msg);
+        elseif (msg.request == "get_notification_count") then handle_get_notification_counters(clientid, channelid, msg);
+        elseif (msg.request == "create_org") then handle_org_create(clientid, channelid, msg);
+        elseif (msg.request == "delete_org") then handle_org_delete(clientid, channelid, msg);
+        elseif (msg.request == "edit_org") then handle_org_edit(clientid, channelid, msg);
+        elseif (msg.request == "get_org") then handle_get_org(clientid, channelid, msg);
+        elseif (msg.request == "create_org_invite") then handle_create_org_invite(clientid, channelid, msg);
+        elseif (msg.request == "set_status_line") then handle_set_status_line(clientid, channelid, msg);
+        elseif (msg.request == "fsusage") then handle_get_fsusage(clientid, channelid, msg);
+		return;
+		end
+	end
+	if msg.mesgtype == "event" then
+		if msg.eventtype == "status_update" then 
+			handle_status_update(msg);
+			return;
+		end
+	end
+return;
+end
+
+function
+handle_data(clientid, channelid, data)
+info("data mesg:", data);
+local msg = json.decode(data);
+if msg then 
+    info("decode success");
+    handle_mesg(clientid, channelid, msg);
+else
+    error("Unable to decode incoming msg.");
+end 
+info("done handling data mesg");
+return;
+end
+
+function
+handle_control(msg)
+info("recvd control message");
+if msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_ARRIVAL then
+    info("client arrival:    ", msg.clientid, msg.channelid);
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_DEPARTURE then 
+    info("client departure: removing clienttuple from the session db", msg.clientid, msg.channelid);
+    info("broadcasting user offline status to all the online org members");
+    local uid = lb.getuidforclientid(msg.clientid);
+    if uid ~= 0 then
+        bcast_user_status_update(getuserobj(uid),
+                                 get_org_object_by_name(getuserobj(uid).organization),
+                                 "offline");
+        info("removing client tuple from the session table.");
+        lb.remclienttuple(uid);
+    else
+        error("tuple missing for clientid:", msg.clientid);
+    end
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_ADD then 
+    info("channel add:    ", msg.clientid, msg.channelid);
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_DELETE then
+    info("channel delete:    ", msg.clientid, msg.channelid);
+end
+info("done handling control mesg");
+return;
+end
+
+function
+handle_signal(sig)
+info("recvd termination signal exiting ...");
+os.exit(0);
+end
+
+--[[
+read the configuration and populate the variables. 
+]]
+function
+readconfig()
+mongo_server_addr = lb.getstrconfig("system.mongo_server_address");
+log_file = lb.getstrconfig("auth.log_file");
+debug_level = lb.getstrconfig("auth.debug_level");
+--[[Trim trailing slashes if any ]]
+fmgr_base_folder_dir = trimtrailingslash(lb.getstrconfig("fmgr.folder_dir"));
+user_home_base_path = fmgr_base_folder_dir;
+group_home_base_path = fmgr_base_folder_dir;
+return;
+end
+
+function
+dump_config()
+trace("Configuration dump ...");
+trace("----------------------");
+trace("mongo_server_addr:  ", mongo_server_addr);
+trace("log_file:  ", log_file);
+trace("debug_level:  ", debug_level);
+trace("fmgr_base_folder_dir:  ", fmgr_base_folder_dir);
+return;
+end
+
+--[[ 
+get all the groups from the mongodb and for all the
+members in the group add them to the membership cache.
+]]
+function
+build_group_membership_cache()
+info("Building group membership cache");
+local q = db:query(akorp_group_ns(), "{$query:{}}", 0);
+for group in q:results()
+do
+    for i,uid in ipairs(group.members)
+    do
+        if not lb.isgroupmember(uid, group.gid) then
+            lb.adduidgidmapping(uid, group.gid);
+        end
+    end
+end
+return;
+end
+
+function 
+auth_server_main(arg)
+posix.sleep(3);
+posix.syslog(LOG_INFO, string.format("\nakorp auth server spawned"));
+lb.daemonize();
+lb.setlevel(LOG_TRACE); --make this configurable 
+lb.loadconfig("/etc/antkorp/antkorp.cfg");
+readconfig();
+dump_config();
+local rc = lb.openlog(log_file);
+	if not rc then 
+	posix.syslog(LOG_ERROR, string.format("\nUnable to open log file exiting"));
+	return;
+end 
+if debug_level == "info" then log_level = LOG_INFO;
+elseif debug_level == "warning" then log_level = LOG_WARNING;
+elseif debug_level == "error" then log_level = LOG_ERROR; 
+elseif debug_level == "fatal" then log_level = LOG_FATAL;
+elseif debug_level == "trace" then log_level = LOG_TRACE;
+elseif debug_level == "debug" then log_level = LOG_DEBUG;
+end
+lb.setlevel(log_level); --make this configurable 
+info("configuration reading complete.");
+info("logger initialized.");
+db = assert(mongo.Connection.New())
+assert(db:connect(mongo_server_addr))
+info("connected to the mongodb"); 
+metaobj = get_akorp_meta();
+if not metaobj then 
+	error("\nUnable to find the meta object from the database, database corrupted ?");
+	return;
+end 
+info("akorpdb information found in the mongodb"); 
+--[[
+ld = lualdap.open_simple(ldap_server, admin_bind_dn, admin_pass);
+if not ld then 
+	error("\nUnable to open connection to ldap server, pls check the access");
+	return -1; 
+end
+info("\nregistered with ldap server:  ", ldap_server); 
+]]
+local estr = lb.createservice("auth");
+if estr then
+	error("Failed to register with the network gateway: ", estr);
+    return;
+end
+    build_group_membership_cache();
+    lb.setdatarecvhandler(handle_data);
+    lb.setcontrolrecvhandler(handle_control);
+    lb.setsignalhandler(handle_signal);
+    local estr = lb.run(); -- we never return from here until we call lb.stop().
+    error(estr);
+    return;
+end
+
+auth_server_main(arg);

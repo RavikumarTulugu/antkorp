@@ -1,0 +1,14 @@
+
+All project level todos are documented here 
+i) exceptionalize all the C++ code and handle the exceptions accordingly. 
+ii) logging support should be extensive and should be selectable basing on 
+	module and level.
+iii) selective notification of errors to the user interface, errors can be 
+ 	filtered or modified before throwing them to user interface.
+iv) convert from json to bson or some other format which has support for binary data 
+	to avoid the base64 mess. Atleast we can get rid of base64 in fmgr and dstores. 
+v) Create a user for akorp on the host system and run daemons with that privilige.
+   set the setuid bit of all the daemons and executables so that priviliges can be 
+   escalated or dropped basing on need.
+vi) try to see if we can use cjson instead of pure lua json , to increase the speed 
+	of luacode.

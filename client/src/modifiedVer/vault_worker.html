@@ -1,0 +1,150 @@
+<html>
+	<head>
+		<title>Vault</title>
+
+		<link rel="stylesheet" href="css/vault_css.css" />
+		<link rel="stylesheet" href="css/jqx.base.css" type="text/css" />
+		<link rel="stylesheet" href="css/jqx.darkblue.css" type="text/css" />
+		<link rel="stylesheet" href="css/jquery.percentageloader-01a.css" type="text/css" />
+		<script type="text/javascript" src="js/gettheme.js"></script>
+		<script type="text/javascript" src="js/jquery.js"></script>
+		<script type="text/javascript" src="js/jqx-all.js"></script>
+		<script type="text/javascript" src="js/jquery-ui-1.8.22.custom.min.js"></script>
+		<link rel="stylesheet" href="css/jquery-ui-1.8.22.custom.css"/>
+		<script type="text/javascript" src="js/jQuery.vaultcmenu.js"></script>
+		<script type="text/javascript" src="js/vaultjs.js"></script>
+		<script type="text/javascript" src="js/jquery.percentageloader-01a.js"></script>
+		<script type="text/javascript" src="js/FileSaver.js"></script>
+
+		<style>
+		</style>
+	</head>
+	<body>
+<div id='panel'>
+	<ul id='desktop-list'>
+		<li id='vault'>
+			<img src='css/images/system-file-manager.png' height=80 width=60 align='center'><br><span>File Manager</span>
+		</li>
+	</ul>
+</div>
+		<!-- Container for the handling the file manager -->
+		<div id='window' >
+			<div>
+				Vault
+			</div>
+			<div id='container' class='container'>
+				<div id='header' class='menubar ui-widget-header ui-corner-all'>
+					<div id="home_folder" class="ui-menu_item" title='Goto Home Directory'><!--<img src='css/images/home_folder.png' />-->
+					</div>
+						
+					<div id="gettree" class="menu_item"><img src='css/images/tree_view.png'  title='Get Tree'/>
+					</div>
+					
+					
+					<div id='parent' class="ui-menu_item" title="Up"></div>
+					
+				
+					
+					
+					
+					<div id='refresh' class="ui-menu_item" title="refresh"></div>
+					<div class="bset">	
+					<div id="upload_fldr" class="ui-menu_item" title='Upload Folder'><!--<img src='css/images/Upload-Folder.png'  title='Upload Folder'/>-->
+					</div>
+					<div id="upload_fl" class="ui-menu_item" title='Upload File'><!--<img src='css/images/Upload_File.png' title='Upload File'/>-->
+					</div>
+				</div>
+				<div class='bset'>
+					<div id="add_fldr" class="ui-menu_item" title="add folder"><!--<img src='css/images/folder_add.png'  title='Add Folder'/>-->
+					</div>
+					<div id="add_fl" class="ui-menu_item" title="add File"><!--<img src='css/images/Add file.png'  title='Add File'/>-->
+					</div>
+					</div>
+					
+					<input type='file'  id='inputmode' webkitdirectory value='upload' >
+				</div>
+				<div id="workzone" class="vault" >
+					<div id='nodes' >
+						<ul>
+							<li>
+								<span id='home' data-path='/tmp' class='dirnode'><img src='css/images/home.png'> Home</span>
+							</li>
+						</ul>
+					</div>
+					<div id='dropzone'>
+						<ul id='file-list'></ul>
+					</div>
+
+				</div>
+		<!--		<div id='footer' class="infobar" ></div>-->
+			</div>
+		</div>
+
+
+		<div id='uploadwindow'>
+			<div>
+				Uploads...
+			</div>
+			<div>
+			<div id='uprogress'></div>
+			<div id='upload_status'></div>
+			</div>
+		</div>
+
+		<div id='downloads'>
+			<div>
+				Downloads
+			</div>
+			<div class='dlds'>
+
+				<div id='progress'></div>
+				<div id='dloads'></div>
+			</div>
+		</div>
+		<!--Context Menu with designed plugin -->
+		<div id="jqxMenu" >
+			<ul id='cmenu'>
+				<li id="open">
+					Open
+				</li>
+			<!--	<li id="edit" class='fldremove'>
+					Edit
+			</li>-->
+				<li  id="cut" >
+					Cut
+				</li>
+				<li id="copy">
+					Copy
+				</li>
+				<li id="paste">
+					Paste
+				</li>
+				<li id="download">
+					Download
+				</li>
+			<!--	<li id='rename' class="separator">
+					Rename
+			</li>-->
+				<li id="dlt">
+					Delete
+				</li>
+				<li id="info">
+					Info
+				</li>
+			</ul>
+		</div>
+
+		<div id='sbar'>
+			<div class='statusbar'>
+				<div class='start'>
+					Menu
+				</div>
+				<div id='clock'></div>
+				<div class="fullscreen">
+					<img src='css/images/display.png'width="20px" height="18px" align="middle"/>
+				</div>
+				<div id='state' Title="Network Connected"></div>
+			</div>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: featureCheck.js</title>
+    
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+    
+    <h1 class="page-title">Source: featureCheck.js</h1>
+    
+    
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source"><code>/**
+ * @fileOverview Helps to check the required features are available in the browser, if not throws error .
+ * @name feature check 
+ */
+
+define(
+		"featureCheck",
+		[ "jquery", "underscore", "backbone", "akputils" ],
+		function($, _, Backbone, utils) {
+
+			var Controller = Backbone.View
+					.extend({
+						initialize : function() {
+							$('&lt;div/>').addClass("overlay").attr("id","logOverlay").appendTo('body');
+							$(".akorp-ui").hide();
+							this.mask = $("#logOverlay");
+							window.MediaSource = window.MediaSource|| window.WebKitMediaSource;
+							this.appload = $('#loadbar');
+							this.loading=false;
+						},
+						baseCss : {
+							"font-size" : "24px",
+							"color" : "red",
+							"margin" : "20px",
+							"line-height" : "30px",
+						},
+						check : function() {
+							/*
+							 * Check1: checking browser
+							 */
+							var isChrome = /chrom(e|ium)/
+									.test(navigator.userAgent.toLowerCase());
+							if (!isChrome) {
+								this.venderError();
+								return false;
+
+							}
+
+							/*
+							 * Check2: Checking for websocket support.
+							 */
+
+							else if (!"WebSocket" in window) {
+								this.noSupport();
+								return false;
+							}
+
+							return true;
+						},
+						statusMsgs : {
+							"wait" : "&lt;p>Please wait, we are getting your identity..&lt;/p>",
+							"unreachable" : "&lt;p>Sorry! antkorp is unreachable at the moment,&lt;br> please try after some time.&lt;/p>",
+							"noSupport" : "&lt;p>Oops! your browser doesn't compatible with the application, &lt;br>please upgrade your browser to try our demo.&lt;/p>",
+							"venderError" : "&lt;p>Sorry! We only support Google Chrome.&lt;br> Get Chrome and try our Demo.&lt;/p>",
+							"noResponse" : "&lt;p>Sorry! antkorp is not responding at the moment,&lt;br> please try after some time.&lt;/p>",
+						},
+						show : function(text) {
+							$(".errDailog").remove();
+							var msg = $("&lt;div/>").attr("id", "browserFailMsg").addClass("modal errDailog").appendTo("body").append(text);
+							this.mask.show();
+							this.adjust("#" + msg.attr("id"));
+						},
+						unautherized : function() {
+
+						},
+						verifying : function() {
+
+							var msg = $(this.statusMsgs["wait"]).css(this.baseCss);
+							
+							this.show(msg)
+
+						},
+						
+						notReachable : function() {
+							if(this.loading) this.loaded();
+							var msg = $(this.statusMsgs["unreachable"]).css(this.baseCss);
+
+							this.show(msg);
+
+						},
+						noSupport : function() {
+							if(this.loading) this.loaded();
+							
+							var icon=$("&lt;span class='icon-html5 akorp-error-icon' style=' '>");
+							var msg = $(this.statusMsgs["noSupport"]).addClass("akorp-error-msg");
+							var msgbox = $("&lt;div/>").append(icon).append(msg);
+							
+							this.show(msgbox);
+
+						},
+						notResponding : function() {
+							var msg = $(this.statusMsgs["noResponse"]).css(this.baseCss);
+							this.show(msg);
+						},
+						venderError : function() {
+							if(this.loading) this.loaded();
+							
+							var icon=$("&lt;span class='akorp-error-icon' >&lt;img src='https://ssl.gstatic.com/images/icons/product/chrome-64.png' alt='Chrome' />&lt;/span>");
+							
+							var msg = $(this.statusMsgs["venderError"])	.addClass("akorp-error-msg");
+							
+							var msgbox = $("&lt;div/>").append(icon).append(msg);
+							
+							this.show(msgbox);
+
+						},
+						success : function() {
+
+						},
+						adjust : function(id) {
+							$(id).css("max-width", "80%");
+
+							var w = $(id).width();
+							var h = $(id).height();
+
+							var nw = -w / 2;
+							var nh = -h / 2;
+
+							$(id).css({
+								"top" : "20%",
+								"left" : "50%",
+								"margin-left" : nw + "px",
+							// "margin-top" : nh + "px"
+							});
+						},
+						showLoader : function() {
+							this.appload.show();
+
+							utils.makeCenter("#loadbar");
+							this.loading=true;
+						},
+						loader : function() {
+
+							window.loadComplete = 0;
+							var _self = this;
+							if(!this.loading)this.showLoader();
+							
+							window.loader = function(percentage, apploadstatus) {
+								loadComplete += percentage;
+
+								/*
+								 * appload.children(".apploadbar").children(".loadpercentage")
+								 * .css({ //"width" : loadComplete + "%" })
+								 */
+
+								_self.appload.children(".apploadstatus").html(apploadstatus);
+								
+								//this.logger(loadComplete + " " + apploadstatus);
+								if (loadComplete == 100) {
+
+									//_self.appload.hide();
+									_self.changeLoadStatus("Connecting to the server...")
+
+								}
+
+							}
+						},
+						changeLoadStatus:function(status){
+							this.appload.children(".apploadstatus").html(status)
+						},
+						loaded:function(){
+							this.appload.hide();
+							this.loading=false;
+						},
+						logger : function() {
+
+							window.logger = function(msg) {
+								this.canLog = false;
+								if (canLog) {
+									console.log(msg);
+								}
+							}
+
+						},
+						checkURL : function() {
+							return utils.str2Data(window.location.search);
+						}
+
+					});
+			return Controller;
+		});</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Index</a></h2><h3>Modules</h3><ul><li><a href="module-akpauth.html">akpauth</a></li><li><a href="module-commulator.html">commulator</a></li><li><a href="module-vault.html">vault</a></li></ul><h3>Classes</h3><ul><li><a href="akp.html">akp</a></li><li><a href="global.html#auth">auth</a></li><li><a href="notification.html">notification</a></li><li><a href="organization.html">organization</a></li></ul><h3>Global</h3><ul><li><a href="global.html#getManager">getManager</a></li></ul>
+</nav>
+
+<br clear="both">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.3.0-alpha2</a> on Tue Dec 17 2013 13:05:20 GMT+0530 (IST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

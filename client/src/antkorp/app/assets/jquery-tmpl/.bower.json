@@ -1,0 +1,13 @@
+{
+  "name": "jquery-tmpl",
+  "homepage": "https://github.com/jquery/jquery-tmpl",
+  "_release": "2c43d4a2f9",
+  "_resolution": {
+    "type": "branch",
+    "branch": "master",
+    "commit": "2c43d4a2f9dc7e9aa9b36841a526896e7aac5c88"
+  },
+  "_source": "git://github.com/jquery/jquery-tmpl.git",
+  "_target": "*",
+  "_originalSource": "jquery-tmpl"
+}

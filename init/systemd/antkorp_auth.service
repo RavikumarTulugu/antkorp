@@ -1,0 +1,29 @@
+#/****************************************************************
+# * Copyright (c) Neptunium Pvt Ltd., 2014.
+# * Author: Neptunium Pvt Ltd..
+# *
+# * This unpublished material is proprietary to Neptunium Pvt Ltd..
+# * All rights reserved. The methods and techniques described herein 
+# * are considered trade secrets and/or confidential. Reproduction or 
+# * distribution, in whole or in part, is forbidden except by express 
+# * written permission of Neptunium.
+# ****************************************************************/
+
+[Service]
+Description=antkorp platform authentication daemon
+User=antkorp 
+Group=antkorp 
+Environment=LUA_PATH="/opt/antkorp/foreign/lua/5.1/?.lua;/opt/antkorp/custom/lua/?.lua;/usr/local/share/lua/5.1/?.lua"
+Environment=LUA_CPATH="/opt/antkorp/custom/lib/?.so;/opt/antkorp/foreign/lib/?.so;/usr/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;/opt/antkorp/foreign/lib/lua/5.1/?.so"
+Environment=LD_LIBRARY_PATH="/usr/local/lib:/opt/antkorp/custom/lib/:/opt/antkorp/foreign/lib/"
+Environment=PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/opt/antkorp/foreign/bin/:/opt/antkorp/custom/bin:/opt/antkorp/foreign/lua/:/opt/antkorp/custom/lua"
+Environment=ANTKORP_DEBUG="false"
+#exec >>/var/log/antkorp/startup.log 2>&1;
+Type=forking
+Restart=on-abort
+RestartSec=5
+ExecStartPre=logger -t "akorp_auth:" "antkorp akorp_auth daemon starting...";
+ExecStartPost=logger -t "akorp_auth:" "antkorp akorp_auth daemon started successfully.";
+ExecStopPre=logger -t "akorp_auth:" "antkorp akorp_auth daemon stopping ...";
+ExecStopPost=logger -t "akorp_auth:" "antkorp akorp_auth daemon stopped.";
+ExecStart=lua /opt/antkorp/custom/lua/akorp_auth >> /var/log/antkorp/startup.log 2>&1;

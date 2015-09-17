@@ -1,0 +1,573 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Neptunium</title>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+
+		<meta name="description" content="" />
+		<meta name="author" content="Rajukonga" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link  rel="stylesheet" href="css/bootstrap.min.css" />
+		<link  rel="stylesheet" href="css/bootstrap-responsive.min.css" />
+		<link rel="stylesheet" href="css/flat-ui.css" />
+		<link rel="stylesheet" href="css/site.css" />
+	
+	</head>
+	<body>
+		<!-- NAVBAR
+    =================== -->
+    <div class="navbar-wrapper">
+      <!-- Wrap the .navbar in .container to center it within the absolutely positioned parent. -->
+      <div class="container">
+		<header class="navbar navbar-inverse">
+  <div class="navbar-inner">
+    <div class="container">
+ 
+      <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>
+ 
+      <!-- Be sure to leave the brand out there if you want it shown -->
+      <a class="brand" href="#">Neptunium</a>
+ 
+      <!-- Everything you want hidden at 940px or less, place within here -->
+      <div class="nav-collapse collapse">
+        <!-- .nav, .navbar-search, .navbar-form, etc -->
+        <ul class="nav">
+      <li class="active"><a href="#">Home</a></li>
+      <li><a href="#">Pricing</a></li>
+      <li><a href="#">Features</a></li>
+    </ul>
+      </div>
+ 
+    </div>
+  </div>
+</header>
+
+</div>
+</div>
+
+ <!-- Carousel
+    ================================================== -->
+    <div id="myCarousel" class="carousel slide">
+      <div class="carousel-inner">
+        <div class="item active">
+          <img src="http://getbootstrap.com/assets/img/examples/slide-02.jpg" alt="">
+          <div class="container">
+            <div class="carousel-caption">
+              <h1>Example headline.</h1>
+              <p class="lead">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>
+              <a class="btn btn-large btn-primary" href="#">Sign up today</a>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <img src="http://lorempixel.com/1280/1024/technics" alt="">
+          <div class="container">
+            <div class="carousel-caption">
+              <h1>Another example headline.</h1>
+              <p class="lead">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>
+              <a class="btn btn-large btn-primary" href="#">Learn more</a>
+            </div>
+          </div>
+        </div>
+        <div class="item">
+          <img src="http://lorempixel.com/1280/1024/abstract" alt="">
+          <div class="container">
+            <div class="carousel-caption">
+              <h1>One more for good measure.</h1>
+              <p class="lead">Cras justo odio, dapibus ac facilisis in, egestas eget quam. Donec id elit non mi porta gravida at eget metus. Nullam id dolor id nibh ultricies vehicula ut id elit.</p>
+              <a class="btn btn-large btn-primary" href="#">Browse gallery</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <a class="left carousel-control" href="#myCarousel" data-slide="prev">&lsaquo;</a>
+      <a class="right carousel-control" href="#myCarousel" data-slide="next">&rsaquo;</a>
+    </div><!-- /.carousel -->
+
+
+
+    
+
+
+
+		<section class="login-screen akp-hidden" style="background: #1ABC9C" id="userlogin">
+			<div class="container logscrn">
+				<div class="row-fluid" style="margin-top: 10%;font-size: 13px;">
+					<div class="span12">
+						<div class="span4 offset4">
+							<div class="area login">
+								<form class="form-horizontal loginform">
+									<div class="heading">
+										<h4 class="form-heading">Sign In</h4>
+									</div>
+									<div class="control-group sign-control-group">
+										<input type="text" id="inputCompanyName" class="input-field" placeholder="E.g. Some Software Pvt. Ltd." required="required"   pattern="[A-Za-z1-9].{5,25}">
+										<label class="control-label icon-home input-icon" for="inputCompanyName"></label>
+										
+									</div>
+									<div class="control-group sign-control-group">
+										<input type="text" id="inputUsername" placeholder="E.g. ashwinhegde" required="required" class="input-field">
+										<label class="control-label icon-user-4 input-icon" for="inputUsername"></label>
+										
+									</div>
+									<div class="control-group sign-control-group">
+										<input type="password" id="inputPassword" placeholder="Min. 8 Characters" required="required" pattern=".{5,15}" class="input-field">
+										<label class="control-label icon-lock input-icon" for="inputPassword"></label>
+										
+									</div>
+									<div class="control-group">
+										
+											<label class="checkbox">
+												<input type="checkbox" id="inputRememberMe">
+												Remember me </label>
+											<button type="submit" class="btn btn-primary applogin btn-block btn-large">
+												Sign In
+											</button>
+											
+										
+									</div>
+									<div>
+										 <a href="#" class=" btn-link">Forgot my password</a> | <a href="#pricinglist" class=" btn-link"> Sign Up </a>
+									</div>
+									<!--<div class="alert alert-info">
+										<button type="button" class="close" data-dismiss="alert">
+											x
+										</button>
+
+										<table class="table-bordered" cellpadding="5px">
+											<caption>
+												Useranames List
+											</caption>
+											<thead>
+												<tr>
+													<th>User</th><th>Username</th>
+												</tr>
+											</thead>
+											<tbody>
+												<tr>
+													<td>Raju</td><td>kongaraju100002795532058</td>
+												</tr>
+												<tr>
+													<td>Ravi Kumar</td><td>naidu.trk786547317</td>
+												</tr>
+												<tr>
+													<td>Ramesh</td><td>rameshp23456100004449519308</td>
+												</tr>
+											</tbody>
+										</table>
+										<strong>password : admin</strong>
+										<br />
+										<strong>org:antkorp</strong>
+									</div>-->
+									<!--  <div class="alert alert-error">
+									<button type="button" class="close" data-dismiss="alert">×</button>
+									<strong>Access Denied!</strong> Please provide valid authorization.
+									</div> -->
+								</form>
+							</div>
+						</div>
+
+					</div>
+
+				</div>
+			</div>
+		</section>
+		
+		 <section class="container marketing">
+
+      <!-- Three columns of text below the carousel -->
+      <div class="row">
+        <div class="span4">
+          <img class="img-circle" data-src="http://placehold.it/140/">
+          <h2>Heading</h2>
+          <p>Donec sed odio dui. Etiam porta sem malesuada magna mollis euismod. Nullam id dolor id nibh ultricies vehicula ut id elit. Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Praesent commodo cursus magna, vel scelerisque nisl consectetur et.</p>
+          <p><a class="btn" href="#">View details &raquo;</a></p>
+        </div><!-- /.span4 -->
+        <div class="span4">
+          <img class="img-circle" data-src="http://placehold.it/140/">
+          <h2>Heading</h2>
+          <p>Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit. Cras mattis consectetur purus sit amet fermentum. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+          <p><a class="btn" href="#">View details &raquo;</a></p>
+        </div><!-- /.span4 -->
+        <div class="span4">
+          <img class="img-circle" data-src="http://placehold.it/140/">
+          <h2>Heading</h2>
+          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+          <p><a class="btn" href="#">View details &raquo;</a></p>
+        </div><!-- /.span4 -->
+      </div><!-- /.row -->
+      <div class="row">
+        <div class="span4">
+          <img class="img-circle" data-src="http://placehold.it/140/">
+          <h2>Heading</h2>
+          <p>Donec sed odio dui. Etiam porta sem malesuada magna mollis euismod. Nullam id dolor id nibh ultricies vehicula ut id elit. Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Praesent commodo cursus magna, vel scelerisque nisl consectetur et.</p>
+          <p><a class="btn" href="#">View details &raquo;</a></p>
+        </div><!-- /.span4 -->
+        <div class="span4">
+          <img class="img-circle" data-src="http://placehold.it/140/">
+          <h2>Heading</h2>
+          <p>Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit. Cras mattis consectetur purus sit amet fermentum. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+          <p><a class="btn" href="#">View details &raquo;</a></p>
+        </div><!-- /.span4 -->
+        <div class="span4">
+          <img class="img-circle" data-src="http://placehold.it/140/">
+          <h2>Heading</h2>
+          <p>Donec sed odio dui. Cras justo odio, dapibus ac facilisis in, egestas eget quam. Vestibulum id ligula porta felis euismod semper. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh, ut fermentum massa justo sit amet risus.</p>
+          <p><a class="btn" href="#">View details &raquo;</a></p>
+        </div><!-- /.span4 -->
+      </div><!-- /.row -->
+		
+		
+		 <hr class="featurette-divider">
+
+      <div class="featurette">
+        <img class="featurette-image pull-right" src="css/images/illustrations/calendar.png">
+        <h2 class="featurette-heading">First featurette headling. <span class="muted">It'll blow your mind.</span></h2>
+        <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus commodo.</p>
+      </div>
+
+      <hr class="featurette-divider">
+
+      <div class="featurette">
+        <img class="featurette-image pull-left" src="css/images/illustrations/book.png">
+        <h2 class="featurette-heading">Oh yeah, it's that good. <span class="muted">See for yourself.</span></h2>
+        <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus commodo.</p>
+      </div>
+
+      <hr class="featurette-divider">
+
+      <div class="featurette">
+        <img class="featurette-image pull-right" src="css/images/illustrations/share.png">
+        <h2 class="featurette-heading">And lastly, this one. <span class="muted">Checkmate.</span></h2>
+        <p class="lead">Donec ullamcorper nulla non metus auctor fringilla. Vestibulum id ligula porta felis euismod semper. Praesent commodo cursus magna, vel scelerisque nisl consectetur. Fusce dapibus, tellus ac cursus commodo.</p>
+      </div>
+
+      <hr class="featurette-divider">
+		
+		
+</section>
+		<section class="pricingscreen " id="pricinglist">
+			<div class="container-fluid">
+				<div class="row-fluid ">
+
+					<div class="span3 tiny pricing-table-column ">
+						<div class="pricing-table-header-tiny">
+							<h2>$ 0/mo</h2>
+							<h3>Free Edition</h3>
+						</div>
+						<div class="pricing-table-features">
+							<p>
+								<strong>5</strong> Users
+							</p>
+							<p>
+								<strong>2GB</strong> Storage
+							</p>
+							<p>
+								<strong>Unlimited</strong> Features
+							</p>
+
+						</div>
+						<div class="pricing-table-signup-tiny">
+							<p>
+								<a href="#usersignup">Sign Up</a>
+							</p>
+						</div>
+					</div>
+					<div class="span3 small pricing-table-column">
+						<div class="pricing-table-header-small">
+							<h2>$ 299/mo</h2>
+							<h3>Cloud Edition</h3>
+						</div>
+						<div class="pricing-table-features">
+							<p>
+								<strong>50</strong> Users
+							</p>
+							<p>
+								<strong>30GB</strong> Storage
+							</p>
+							<p>
+								<strong>Unlimited</strong> Features
+							</p>
+							<p>
+								<strong>Own</strong> Domain
+							</p>
+
+						</div>
+						<div class="pricing-table-signup-small">
+							<p>
+								<a href="#usersignup">Sign Up</a>
+							</p>
+						</div>
+					</div>
+
+					<div class="span3 price-medium pricing-table-column">
+						<div class="pricing-table-header-medium">
+							<h2>$ 699/mo</h2>
+							<h3>Enterprise Edition</h3>
+						</div>
+						<div class="pricing-table-features">
+							<p>
+								<strong>Unlimited </strong> Users
+							</p>
+							<p>
+								<strong>Unlimited</strong> Storage
+							</p>
+							<p>
+								<strong>Unlimited</strong> Features
+							</p>
+							<p>
+								<strong>Own</strong> Domain
+							</p>
+							<p>
+								<strong>Free</strong> Support
+							</p>
+						</div>
+						<div class="pricing-table-signup-medium">
+							<p>
+								<a href="#usersignup">Sign Up</a>
+							</p>
+						</div>
+					</div>
+
+					<div class="span3 pro pricing-table-column">
+						<div class="pricing-table-header-pro">
+							<h2>$ 9999</h2>
+							<h3>On Primice Edition</h3>
+						</div>
+						<div class="pricing-table-features">
+							<p>
+								<strong>Your Own</strong> Deployment
+							</p>
+
+						</div>
+						<div class="pricing-table-signup-pro">
+							<p>
+								<a href="#">Contact Sales</a>
+							</p>
+						</div>
+					</div>
+				</div>
+
+				<div class="">
+					<a href="#userlogin" class="btn btn-link">Back</a>
+				</div>
+				<div class="row-fluid">
+
+				</div>
+			</div>
+
+		</section>
+
+		<section class="signupscreen " id="usersignup">
+			<div class="container signupscrn">
+				<div class="row-fluid" style="margin-top: calc(50% - 400px);">
+					<div class="span12">
+						<div class="span3 offset5">
+							<div class="area signup">
+								<form class="form-horizontal">
+									<div class="heading">
+										<h4 class="form-heading">Sign Up</h4>
+									</div>
+									<div class="control-group signup-field">
+										<label class="control-label" for="inputCompanyName">Company Name</label>
+										<input type="text" id="inputCompanyName" placeholder="E.g. Some Software Pvt. Ltd." required="required">
+										
+									</div>
+
+									<div class="control-group signup-field">
+										<label class="control-label" for="inputEmail">Email</label>
+										<input type="text" id="inputEmail" placeholder="E.g. ashwinh@cybage.com" required="required">
+										
+									</div>
+									<div class="control-group">
+										
+											<label class="checkbox">
+												<input type="checkbox">
+												I agree all your Terms of Services </label>
+											<button type="submit" class="btn btn-primary btn-block btn-large">
+												Sign Up
+											</button>
+											<a href="#pricinglist" class=" btn btn-link ">Pricing</a>
+											<!-- <button type="button" class="btn">Help</button> -->
+										
+									</div>
+									<!-- <div class="alert alert-info">
+									<button type="button" class="close" data-dismiss="alert">×</button>
+									<strong>Confirmation: </strong> A confirmation email has been sent to your email.<br>
+									Thank you for your registration.
+									</div>-->
+								</form>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</section>
+
+		<!-- registration screen  -->
+		<section class="regform">
+			<div class="container">
+				<div class="row-fluid">
+					<div class="span6 offset4">
+						<div class="area signup-area">
+							<form class="form-horizontal">
+								<div class="heading">
+									<h4 class="form-heading">Register</h4>
+								</div>
+								<div class="control-group">
+									<label class="control-label" for="inputCompanyName">Company Name</label>
+									<div class="controls">
+										<input type="text" id="inputCompanyName" placeholder="E.g. Some Software Pvt. Ltd." disabled="disabled">
+									</div>
+								</div>
+								<div class="control-group">
+									<label class="control-label" for="inputEmail">Email</label>
+									<div class="controls">
+										<input type="email" id="inputEmail" placeholder="E.g. ashwinh@cybage.com" disabled="disabled">
+									</div>
+								</div>
+								<div class="control-group">
+									<label class="control-label" for="inputFirst">First Name</label>
+									<div class="controls">
+										<input type="text" id="inputFirst" placeholder="E.g. Ashwin">
+									</div>
+								</div>
+								<div class="control-group">
+									<label class="control-label" for="inputLast">Last Name</label>
+									<div class="controls">
+										<input type="text" id="inputLast" placeholder="E.g. Hegde">
+									</div>
+								</div>
+
+								<div class="control-group">
+									<label class="control-label" for="inputUser">Username</label>
+									<div class="controls">
+										<input type="text" id="inputUser" placeholder="E.g. ashwinhegde">
+									</div>
+								</div>
+								<div class="control-group">
+									<label class="control-label" for="inputPassword">Password</label>
+									<div class="controls">
+										<input type="password" id="inputPassword" placeholder="Min. 8 Characters">
+									</div>
+								</div>
+								<div class="control-group">
+									<div class="controls">
+										<label class="checkbox">
+											<input type="checkbox">
+											I agree all your <a href="#">Terms of Services</a> </label>
+										<button type="submit" class="btn btn-danger">
+											Sign Up
+										</button>
+										<a href="#" class="btn btn-link ">
+											Help
+										</a>
+									</div>
+								</div>
+
+							</form>
+						</div>
+
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<footer class="footer">
+
+			<div class="container">
+				<div class="row-fluid" style="font-size: 13px;">
+					<div class="span12">
+						<div class="span4" >
+							<ul class="unstyled">
+								<li>
+									Neptunium
+								<li>
+								<li>
+									<a href="#">About us</a>
+								</li>
+								<li>
+									<a href="#">Blog</a>
+								</li>
+								<li>
+									<a href="#">Contact & support</a>
+								</li>
+								<li>
+									<a href="#">Enterprise</a>
+								</li>
+								<li>
+									<a href="#">Site map</a>
+								</li>
+							</ul>
+						</div>
+
+						<div class="span4" >
+							<ul class="unstyled">
+								<li>
+									FAQs
+								<li>
+								<li>
+									<a href="#">Plans and Pricing</a>
+								</li>
+								<li>
+									<a href="#">Features</a>
+								</li>
+								<li>
+									<a href="#"></a>
+								</li>
+								<li>
+									<a href="#">Job board</a>
+								</li>
+							</ul>
+						</div>
+						<div class="span4" >
+							<ul class="unstyled">
+								<li>
+									Contact
+								<li>
+								<li>
+									<a href="#">Sales</a>
+								</li>
+								<li>
+									<a href="#">Support</a>
+								</li>
+								<li>
+									<a href="#">Feedback</a>
+								</li>
+								<li>
+									<a href="#">Team</a>
+								</li>
+							</ul>
+						</div>
+
+					</div>
+				</div>
+				<hr>
+				<div class="row-fluid">
+					<div class="span12">
+						<div class="span8">
+							<a href="#">Terms of Service</a>
+							<a href="#">Privacy</a>
+							<a href="#">Security</a>
+						</div>
+						<div class="span4">
+							<p class="muted pull-right">
+								© 2013 Neptunium Technologies. All rights reserved
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</footer>
+		<script src="js/lib/jquery.js"></script>
+		<script src="js/lib/bootstrap.min.js"></script>
+	</body>
+</html>

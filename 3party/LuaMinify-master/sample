@@ -1,0 +1,226 @@
+local rhVu=require('cjson')require('akorp_utils')
+require('luabridge')local ngzOjWHO=require('stack_trace_plus')
+debug.traceback=ngzOjWHO.stacktrace;function akorp_user_ns()return"akorpdb.users"end
+function akorp_kons_ns()return"akorpdb.kons"end;function akorp_group_ns()return"akorpdb.groups"end
+function akorp_im_ns()return"akorpdb.im"end;function akorp_events_ns()return"akorpdb.events"end;function akorp_request_ns()
+return"akorpdb.requests"end;function akorp_org_ns()return"akorpdb.orgs"end;function akorp_doc_ns()return
+"akorpdb.docs"end
+function akorp_meta_ns()return"akorpdb.meta"end;function akorp_notif_ns()return"akorpdb.notif"end;user_object={}
+user_object.__index=user_object;group_object={}group_object.__index=group_object;notification_object={}
+notification_object.__index=notification_object;request_object={}request_object.__index=request_object;konv_object={}
+konv_object.__index=konv_object;doc_object={}doc_object.__index=doc_object;mail_object={}
+mail_object.__index=mail_object;activity_object={}activity_object.__index=activity_object
+vevent_object={}vevent_object.__index=vevent_object;im_log_object={}
+im_log_object.__index=im_log_object;org_object={}org_object.__index=org_object
+function user_object.new()local dM={}
+setmetatable(dM,user_object)dM.mark_for_delete=false;dM.uid=0;dM.org=0;dM.gid=0;dM.groups={}
+dM.class="user_object"dM.is_active=true;dM.password=""dM.start_date=""dM.login=""
+dM.first_name=""dM.last_name=""dM.middle_name=""dM.dept=""dM.mob=""dM.work=""dM.home=""
+dM.fax=""dM.sex="male"dM.interests={}dM.pager=""dM.homeaddress=""
+dM.workaddress=""dM.dob=""dM.organization=""dM.homedir=""dM.commithome=""dM.facebookid=""
+dM.status="offline"dM.status_line=""dM.email=""dM.homepage=""dM.manager=""dM.info=""
+dM.jobtitle=""dM.likes={}dM.like_count=0;dM.dislikes={}dM.dislike_count=0;dM.friends={}
+dM.image_small=""dM.image_medium=""dM.image_large=""dM.image_original=""dM.recv_stream={}
+dM.sent_stream={}dM.sent_kons={}dM.recv_kons={}dM.activity_log={}dM.notification_queue={}
+dM.stream_updates={}dM.im_log={}dM.offline_mq={}
+dM.create_timestamp=luabridge.currenttime()dM.edit_timestamp=""dM.bookmarks={}return dM end
+function user_object:update()
+local U,_u=db:update(akorp_user_ns(),{uid=self.uid},self,true,false)
+if not U then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:update failed with :%s",_u))return U,_u end;return U end
+function group_object.new()local aLgiy={}setmetatable(aLgiy,group_object)
+aLgiy.mark_for_delete=false;aLgiy.class="group_object"aLgiy.gid=0;aLgiy.organization=""
+aLgiy.gname=""aLgiy.start_date=""aLgiy.description=""aLgiy.admin=0
+aLgiy.homedir=""aLgiy.members={}aLgiy.member_count=0;aLgiy.join_by_approval="true"
+aLgiy.pending_approval_list={}aLgiy.stream={}aLgiy.follower_count=0;aLgiy.followers={}
+aLgiy.tags={}aLgiy.create_timestamp=luabridge.currenttime()
+aLgiy.edit_timestamp=""
+aLgiy.categories={"discussion","question","share","news"}aLgiy.small_image=""aLgiy.image_small=""aLgiy.image_medium=""
+aLgiy.image_large=""aLgiy.image_original=""return aLgiy end
+function group_object:update()
+local mvi,g4KV=db:update(akorp_group_ns(),{gid=self.gid},self,true,false)
+if not mvi then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:update failed with :%s",g4KV))return mvi,g4KV end;return mvi end
+function notification_object.new()local dT7iYDf4={}
+setmetatable(dT7iYDf4,notification_object)dT7iYDf4._id=mongo.ObjectId()[1]
+dT7iYDf4.id=dT7iYDf4._id;dT7iYDf4.owner_gid=0;dT7iYDf4.notifiers={}dT7iYDf4.timestamp=0
+dT7iYDf4.category=""dT7iYDf4.notiftype=""dT7iYDf4.description=""dT7iYDf4.preview=""
+dT7iYDf4.recipients={}dT7iYDf4.kons=0;dT7iYDf4.file=""dT7iYDf4.date=""
+dT7iYDf4.vevent=0;dT7iYDf4.task=0;dT7iYDf4.mail=0;dT7iYDf4.checked={}
+dT7iYDf4.unchecked={}dT7iYDf4.hierarchy={}return dT7iYDf4 end
+function notification_object:update()
+local L,WRH9=db:update(akorp_notif_ns(),{id=self.id},self,true,false)
+if not L then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:update failed with :%s",WRH9))return L,WRH9 end;return L end
+function getnotifobj(cJoBcud)
+local e=db:find_one(akorp_notif_ns(),{id=cJoBcud})
+if e then setmetatable(e,notification_object)end;return e end
+function getnotifobjbyquery(B6zKxgVs)
+local O3_X=db:find_one(akorp_notif_ns(),B6zKxgVs)
+if O3_X then setmetatable(O3_X,notification_object)end;return O3_X end
+function konv_object.new()local DVs8kf2w={}setmetatable(DVs8kf2w,konv_object)
+DVs8kf2w._id=mongo.ObjectId()[1]DVs8kf2w.id=DVs8kf2w._id;DVs8kf2w.owner_uid=0
+DVs8kf2w.owner_gid=0;DVs8kf2w.uri=""DVs8kf2w.has_parent=false;DVs8kf2w.parent=0
+DVs8kf2w.root=0;DVs8kf2w.category=""DVs8kf2w.inline=false;DVs8kf2w.inlinepos=0
+DVs8kf2w.child_count=0;DVs8kf2w.children={}DVs8kf2w.likers={}DVs8kf2w.likecount=0
+DVs8kf2w.dislikers={}DVs8kf2w.dislikecount=0;DVs8kf2w.locked=false;DVs8kf2w.preview=""
+DVs8kf2w.content=""DVs8kf2w.taglist={}DVs8kf2w.limited=false;DVs8kf2w.followers={}
+DVs8kf2w.private=true;DVs8kf2w.activity=0;DVs8kf2w.recipients={}DVs8kf2w.ignorers={}
+DVs8kf2w.create_timestamp=luabridge.currenttime()DVs8kf2w.edit_timestamp=""DVs8kf2w.attachments={}
+DVs8kf2w.favouriters={}DVs8kf2w.trackers={}DVs8kf2w.attached_object=0;return DVs8kf2w end
+function konv_object:update()self.activity=self.activity+1
+local vms5,M7=db:update(akorp_kons_ns(),{id=self.id},self,true,false)
+if not vms5 then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:update failed with :%s",M7))return vms5,M7 end;return vms5 end;function konv_object_delete(v3)end
+function doc_object.new()local ihKb={}
+setmetatable(ihKb,doc_object)ihKb.name=""ihKb.checkouts={}ihKb.version=0;ihKb.locked=0
+ihKb.history={}ihKb.permissions={}return ihKb end;function getuserobj(JGSK)
+local rA5U=db:find_one(akorp_user_ns(),{uid=JGSK})if rA5U then setmetatable(rA5U,user_object)end
+return rA5U end;function getgroupobj(Uc06)
+local lcBL=db:find_one(akorp_group_ns(),{gid=Uc06})if lcBL then setmetatable(lcBL,group_object)end
+return lcBL end
+function getkonvobj(DHPxI)
+local dx=db:find_one(akorp_kons_ns(),{id=DHPxI})if dx then setmetatable(dx,konv_object)else
+error("failed to find object with id:",DHPxI)end;return dx end
+function im_log_object.new()local RRuSHnxf={}
+setmetatable(RRuSHnxf,im_log_object)RRuSHnxf.originator=0;RRuSHnxf.participants={}
+RRuSHnxf.timestamp=0;RRuSHnxf.content={}RRuSHnxf.checked={}return RRuSHnxf end
+function mail_object.new()local mcYOuT={}setmetatable(mcYOuT,mail_object)
+mcYOuT.mailbox_id=0;mcYOuT.id=0;mcYOuT.mtype=0;mcYOuT.parent_id=0;mcYOuT.folder_id=0
+mcYOuT.index_id=0;mcYOuT.imap_id=0;mcYOuT.date=0;mcYOuT.size=0;mcYOuT.volume_id=0
+mcYOuT.blob_digest=0;mcYOuT.unread=0;mcYOuT.flags=0;mcYOuT.tags={}mcYOuT.sender=""
+mcYOuT.subject=""mcYOuT.name=""mcYOuT.metadata=""mcYOuT.mod_metadata=0
+mcYOuT.change_date=""mcYOuT.mod_content=0;return mcYOuT end
+function activity_object.new()local Rr={}setmetatable(Rr,activity_object)
+Rr.uid=0;Rr.gid=0;Rr._id=mongo.ObjectId()[1]Rr.id=Rr._id
+Rr.timestamp=luabridge.currenttime()Rr.activity_type=""Rr.activity=""return Rr end
+function activity_object:update()
+local scRP0,AI0R2TQ6=db:update(akorp_activity_ns(),{id=self.id},self,true,false)
+if not scRP0 and AI0R2TQ6 then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:update failed with :%s",AI0R2TQ6))return scRP0,AI0R2TQ6 end;return scRP0 end
+function get_activity_object(yA)
+local XmVolesU,eZ0l3ch=db:find_one(akorp_activity_ns(),{id=yA})
+if XmVolesU then setmetatable(XmVolesU,activity_object)else if eZ0l3ch then
+error(string.format("db:find_one failed with err:%s",eZ0l3ch))end end;return XmVolesU end
+function vevent_object.new()local W_63_9={}setmetatable(W_63_9,vevent_object)
+W_63_9._id=mongo.ObjectId()[1]W_63_9.id=W_63_9._id;W_63_9.personal=false;W_63_9.owner_uid=0
+W_63_9.owner_gid=0;W_63_9.category=""
+W_63_9.create_timestamp=luabridge.currenttime()W_63_9.edit_timestamp=0;W_63_9.public=true;W_63_9.url=""
+W_63_9.caldav_data=""W_63_9.kons=0;W_63_9.attachments={}W_63_9.recurring="none"
+W_63_9.clones={}W_63_9.clone=false;W_63_9.original_event=0;W_63_9.tstart=0
+W_63_9.tend=0;W_63_9.tstart_unix_time=0;W_63_9.tend_unix_time=0;W_63_9.summary=""
+W_63_9.calendar=0;W_63_9.title=""W_63_9.invited={}W_63_9.accepted={}
+W_63_9.denied={}W_63_9.reminders={}W_63_9.timezone=""W_63_9.allday=false
+W_63_9.limited=true;return W_63_9 end
+function vevent_object_new_from_copy(h9dyA_4T)local oh={}oh=listcopy(h9dyA_4T)
+oh._id=mongo.ObjectId()[1]oh.id=oh._id;setmetatable(oh,vevent_object)return oh end
+function vevent_object:update()
+local DZXGTh,Su9Koz=db:update(akorp_events_ns(),{id=self.id},self,true,false)
+if not DZXGTh and Su9Koz then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:update failed with :%s",Su9Koz))return DZXGTh,Su9Koz end;return DZXGTh end
+function get_vevent_object(Uk7e)
+local KwQCk_G,ptZa=db:find_one(akorp_events_ns(),{id=Uk7e})
+if KwQCk_G then setmetatable(KwQCk_G,vevent_object)else if ptZa then
+error(string.format("db:find_one failed with err:%s",ptZa))end end;return KwQCk_G end
+function vevent_object_delete(PEqsd)
+local iSj,iXxD6s=db:remove(akorp_events_ns(),{id=PEqsd})
+if not iSj and iXxD6s then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:remove failed with :%s",iXxD6s))return iSj,iXxD6s end;return iSj end
+function emit_notification(oiY,FsYIVlkf,HLXS0Q_,Kw,nvaIsNv7,vDnoL55,xlAK,zr1y)
+local Hs="{category : ".."\""..
+HLXS0Q_.."\""..
+",notiftype:".."\""..Kw..
+"\""..","..HLXS0Q_..":"..
+"\""..nvaIsNv7 .."\"".."}"info(Hs)local jk=getnotifobjbyquery(Hs)
+if jk then
+info("There is an old notification already for the event updating it ")
+if not item_present(jk.notifiers,oiY)then
+info("notifier added to the list")table.insert(jk.notifiers,oiY)end
+for Z65,umyCNfj in ipairs(jk.notifiers)do info(umyCNfj)
+if umyCNfj~=oiY then
+info("tracker moving him to unchecked",umyCNfj)if item_present(jk.checked,umyCNfj)then
+remove_item(jk.checked,umyCNfj)end
+if
+not item_present(jk.unchecked,umyCNfj)then table.insert(jk.unchecked,umyCNfj)end end end;jk.timestamp=luabridge.currenttime()jk:update()return jk end;local qzSFyIO=nil;qzSFyIO=notification_object.new()
+if qzSFyIO then
+qzSFyIO.owner_gid=FsYIVlkf;qzSFyIO.preview=zr1y;qzSFyIO.notiftype=Kw;qzSFyIO.category=HLXS0Q_
+qzSFyIO.description=xlAK
+if HLXS0Q_=="kons"then qzSFyIO.kons=nvaIsNv7 elseif HLXS0Q_=="calendar"then
+qzSFyIO.vevent=nvaIsNv7 elseif HLXS0Q_=="file"then qzSFyIO.file=nvaIsNv7 end;table.insert(qzSFyIO.notifiers,oiY)
+qzSFyIO.timestamp=luabridge.currenttime()qzSFyIO.recipients=listcopy(vDnoL55)
+remove_item(qzSFyIO.recipients,oiY)qzSFyIO.unchecked=listcopy(vDnoL55)
+remove_item(qzSFyIO.unchecked,oiY)qzSFyIO:update()return qzSFyIO end;return nil end
+function notify(FT,YVLXYq)info("sending notification")local bJfct={}
+bJfct.mesgtype="notification"bJfct.notification={}bJfct.notification=listcopy(YVLXYq)
+bJfct.notification.active=true;local OhuFpq_N,Dzg=rhVu.encode(bJfct)
+if OhuFpq_N then
+for _4O,C in ipairs(YVLXYq.recipients)do if C~=FT then
+if
+luabridge.getclientid(C)~=0 then luabridge.send2user(C,OhuFpq_N)end end end else
+error(string.format("failed to encode the notification message to json buffer: err=%s",Dzg))end;return end
+function send_notification(fLI2zRe,_Fr2YU,Xfn,U,Ebsw,UlikV,JtAjijkG,s)
+local YAtG_LV3=emit_notification(fLI2zRe,_Fr2YU,Xfn,U,Ebsw,UlikV,JtAjijkG,s)
+if YAtG_LV3 then local LfEJbh_=notify(fLI2zRe,YAtG_LV3)if LfEJbh_ then
+error("failed to notify users error:%s",LfEJbh_)end end;return 0 end
+function request_object.new()local JD={}setmetatable(JD,request_object)
+JD._id=mongo.ObjectId()[1]JD.id=JD._id;JD.owner_gid=0;JD.requestor=0;JD.requestee={}JD.request=""
+JD.category=""JD.oid=0;JD.active=true;JD.granted={}JD.denied={}JD.description=""
+JD.create_timestamp=luabridge.currenttime()JD.muted={}return JD end
+function request_object:update()
+local u,pzDMZwG=db:update(akorp_request_ns(),{id=self.id},self,true,false)
+if not u and pzDMZwG then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:update failed with :%s",pzDMZwG))return u,pzDMZwG end;return u end
+function get_request_object(XPoQB)
+local XxJ,o5sms=db:find_one(akorp_request_ns(),{id=XPoQB})
+if XxJ then setmetatable(XxJ,request_object)else
+error(string.format("db:find_one failed with err:%s",o5sms))return nil,o5sms end;return XxJ end
+function request_object_delete(JQi1jg)
+local wVzn,pE=db:remove(akorp_request_ns(),{id=JQi1jg})
+if not wVzn and pE then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:remove failed with :%s",pE))return wVzn,pE end;return wVzn end
+function org_object.new()local RSjapQ={}RSjapQ._id=mongo.ObjectId()[1]
+RSjapQ.id=RSjapQ._id;RSjapQ.group_list={}RSjapQ.user_list={}RSjapQ.admin=0
+RSjapQ.admin_pass=""RSjapQ.name=""RSjapQ.user_limit=10;RSjapQ.group_limit=5
+RSjapQ.create_timestamp=luabridge.currenttime()RSjapQ.edit_timestamp=""RSjapQ.pending_email_invites=""
+RSjapQ.hosted=true;RSjapQ.domain=""RSjapQ.stunserver=""RSjapQ.filesystempath=""
+RSjapQ.ldap=""RSjapQ.small_image=""RSjapQ.image_small=""RSjapQ.image_medium=""
+RSjapQ.image_large=""RSjapQ.image_original=""RSjapQ.user_list={}
+setmetatable(RSjapQ,org_object)return RSjapQ end
+function org_object:update()
+local QJf,zC=db:update(akorp_org_ns(),{id=self.id},self,true,false)
+if not QJf and zC then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:update failed with :%s",zC))return QJf,zC end;return QJf end
+function get_org_object(pfZ3SPy_)
+local pDNa2ox6,Do6yo7nm=db:find_one(akorp_org_ns(),{id=pfZ3SPy_})
+if pDNa2ox6 then setmetatable(pDNa2ox6,org_object)else
+error(string.format("db:find_one failed with err:%s",Do6yo7nm))return nil,Do6yo7nm end;return pDNa2ox6 end
+function get_org_object_by_name(y06X3k)
+local ivnJjrA,d3fMjkg=db:find_one(akorp_org_ns(),{name=y06X3k})if ivnJjrA then setmetatable(ivnJjrA,org_object)else
+error("db:find_one failed with err:",d3fMjkg)return nil,d3fMjkg end;return
+ivnJjrA end
+function org_object_delete(el)local Wu_uIt,w=db:remove(akorp_org_ns(),{id=el})
+if
+not Wu_uIt and w then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:remove failed with :%s",w))return Wu_uIt,w end;return Wu_uIt end
+function org_object_delete_by_name(sgeP)
+local CM,Qlmlet=db:remove(akorp_org_ns(),{name=sgeP})
+if not CM and Qlmlet then
+error_to_client("There was some internal error on the server pls try again")
+error(string.format("db:remove failed with :%s",Qlmlet))return CM,Qlmlet end;return CM end;function setservicehandle(_)info("setting service handler")
+luabridge.setservicehandle(_)return end;file_object={}
+file_object.__index=file_object
+function get_file_object(RkGFh6)info("get file object()")
+local hw18=rhVu.decode(luabridge.getfileobject(RkGFh6))if hw18 then setmetatable(hw18,file_object)else
+error("failed to getfileobject ")end;return hw18 end;function file_object:update()info("file update()")
+luabridge.setfileobject(self.fqpn,rhVu.encode(self))return end

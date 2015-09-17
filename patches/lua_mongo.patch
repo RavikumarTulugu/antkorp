@@ -1,0 +1,12 @@
+Common subdirectories: luamongo-master/debian and /home/rk/Downloads/luamongo-master/debian
+Common subdirectories: luamongo-master/tests and /home/rk/Downloads/luamongo-master/tests
+diff luamongo-master/utils.cpp /home/rk/Downloads/luamongo-master/utils.cpp
+252d251
+< 			if (numval <= UINT_MAX){
+255,260d253
+< 			}else{
+< 				//try to see if the value is a 64 bit number then 
+< 				//use tonumber which can accamodate 64 bits.
+< 				long long longval = lua_tonumber(L, stackpos);
+< 				builder->append(key, static_cast<long long>(longval));
+< 			}

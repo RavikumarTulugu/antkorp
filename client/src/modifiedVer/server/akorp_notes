@@ -1,0 +1,402 @@
+#!/usr/bin/env lua5.1
+--[[
+
+]]
+require ('os');
+require ('mongo');
+require ('json');
+require ('posix');
+require ('lualdap');
+require ('logging');
+require ('logging.file');
+require ('config');
+require ('akorp_utils');
+require ('akorp_common');
+package.cpath = "../obj/?.so"
+require ('luamodule'); 
+local stp = require ('stack_trace_plus');
+debug.traceback = stp.stacktrace;
+
+debug_mode  = true;
+clientid    = 0; -- client id of the current request being handled 
+cookie      = nil; --cookie of the current request being handled 
+debug_mode  = true;
+signature   = " akorp_notes: ";
+svcname		= "";
+
+--[[
+copy all inheritable properties form the parent konv to the self.
+]]
+function 
+inherit_properties(self, parent)
+self.followers = listcopy(parent);
+local ok, err = self:update();
+if not ok then
+	error_to_client("There was some error trying to create kons");
+	error(string.format("update failed with err:%s", err));
+	return;
+end
+return;
+end
+
+--[[
+queue a notification object to all the intended recipients. 
+if the user is online then send him a live notification, 
+if the user is offline then queue a offline notification in his 
+offline notification queue.
+message type will be "event".
+FIXME: Donot queue the notification to the ignorers.
+]]
+function
+bcast_new_note_event(konv)
+local event = {};
+local group, err;
+local uid;
+event.mesgtype  = "event";
+event.eventtype = "new_konv";
+event.cookie    = cookie;
+event.konv = {};
+
+event.konv.id 				 = konv.id;
+event.konv.owner_uid    	 = konv.owner_uid;
+event.konv.content       	 = konv.content;
+event.konv.create_time_stamp = konv.create_time_stamp;
+event.konv.edit_time_stamp   = konv.edit_time_stamp;
+
+info("konv broadcast to recipients");
+group = getgroupobj(konv.owner_gid);
+if not group then
+	error_to_client(string.format("Invalid group id: %d given, group missing from system", konv.owner_gid)); 
+	error(string.format("Invalid group id: %d given, group missing from system", konv.owner_gid));
+	return;
+end
+local encbuf;
+encbuf = json.encode(event);
+for i,uid in ipairs(group.members)
+do
+	local user;
+	user = getuserobj(uid);
+	if user then
+		user.sent_kons = {};
+		user.recv_kons = {};
+		table.insert(user.recv_kons, konv.id);
+		local ok = user:update();
+		if ok then 
+			luamodule.sendmsg2user(uid, "kons", encbuf);
+		end
+	else
+		error(string.format("Invalid uid: %d encountered user object missing", uid));
+	end
+end
+return;
+end
+
+--[[
+Broadcast the updated konv to all the audience with the update konv event.
+]]
+function
+bcast_update_note_event(konv)
+local event = {};
+local group, err;
+local uid;
+event.mesgtype  = "event";
+event.eventtype = "update_konv";
+event.cookie    = cookie;
+event.konv = {};
+event.konv.id 				 = konv.id;
+event.konv.owner_uid    	 = konv.owner_uid;
+event.konv.content       	 = konv.content;
+event.konv.create_time_stamp = konv.create_time_stamp;
+event.konv.edit_time_stamp   = konv.edit_time_stamp;
+info("konv update broadcast to recipients");
+group = getgroupobj(konv.owner_gid);
+if not group then
+	error_to_client(string.format("Invalid group id: %d given, group missing from system", konv.owner_gid)); 
+	error(string.format("Invalid group id: %d given, group missing from system", konv.owner_gid));
+	return;
+end
+local encbuf;
+encbuf = json.encode(event);
+for i,uid in ipairs(group.members)
+do
+	local user;
+	user = getuserobj(uid);
+	if user then
+		user.sent_kons = {};
+		user.recv_kons = {};
+		table.insert(user.recv_kons, konv.id);
+		local ok = user:update();
+		if ok then 
+			luamodule.sendmsg2user(uid, "kons", encbuf);
+		end
+	else
+		error(string.format("Invalid uid: %d encountered user object missing", uid));
+	end
+end
+return;
+end
+
+
+--[[ 
+store the kons object in the db 
+use id as the cookie sent by the client first time inserting in to mongodb 
+get the object with the cookie as id and then copy the ObjectId to the id 
+field.
+if this has a parent id then update the parents child id to self.
+XXX: inheritance of properties from parent. 
+At the time of creation if the konv is being created as a child of some existing
+konv, then copy some properties of parent to the child. the best example can be 
+the list of followers , the followers are group members plus folks who have 
+explicitly registered with the follow button. 
+
+FIXME: intended recipients is all the group members plus the followers.
+copy the list of followers from the parent to child, if this is a child.
+FIXME: Generate a reference and add it in the notification queue of all the 
+intended recipients.
+]]
+function 
+handle_new_note(msg)
+info("new note");
+local note = note_object.new(); 
+local err  = nil;
+local ok; 
+
+
+note.id 	   = msg.cookie;
+note.owner_uid = msg.uid;
+note.title   = msg.title;
+
+if note then
+	db:insert(akorp_kons_ns, note);
+	kons, err = getnoteobj(msg.cookie);
+	if not note then
+		error_to_client("There was some error creating new note, pls retry");
+		error(string.format("getkonvobj failed with err=%s",err));
+		return;
+	end
+	note.id = note._id[1];
+	--[[ add the owner to the list of followers to simplify broadcast logic ]]
+	table.insert(kons.followers, kons.owner_uid);
+	--[[ XXX: Donot use kons:update() method here. ]]
+	ok, err = db:update(akorp_kons_ns, { id = msg.cookie }, note, false, false);
+	if not ok and err then
+		error_to_client("There was some error creating new note, pls retry");
+		error(string.format("update failed with err=%s",err));
+		return;
+	end
+	info("note stored in database");
+	--[[ update the parent object, set the child to our id ]]
+	if kons.parent ~= 0 then
+		local pkons, err = getkonvobj(kons.parent);
+		if pkons then
+			inherit_properties(kons, pkons);
+			table.insert(pkons.children, kons.id);
+			pkons.child_count = pkons.child_count + 1;
+			ok, err = pkons:update();
+			if not ok and err then 
+				error_to_client("There was some error creating new konversation, pls retry");
+				error(string.format("getkonvobj failed with err=%s",err));
+				return;
+			end
+		else
+			error_to_client("There was some error creating new konversation, pls retry");
+			error(string.format("getkonvobj failed with err=%s",err));
+			return;
+		end
+	end
+	--[[ notify all the recipients of the konv that a change has happened. ]]
+	bcast_new_konv_event(kons);
+else 
+	error_to_client("There was some error creating new konversation, pls retry");
+	error("memory allocation failure for new konversation");
+end 
+respond_to_client("success");
+return; 
+end 
+
+--[[
+A recursive function which deletes all the children traversing 
+down the hierarchy. 
+remember its a tree which is upside down 
+we can have more than one children at one level.
+				P
+			   / \
+			  c   c
+			 / \ / \
+			c   c   c
+]]
+function 
+del_children_dfs(kons) 
+return; 
+end 
+
+--[[ 
+Delete the konversation object.  update the parents child field as well.
+Deletion sets a chain reaction where all the children need to be deleted
+traversing down the path.
+delete the references to the konv from all the recipient's notification queues.
+]]
+function 
+handle_del_note(msg)
+info("konv deleted");
+local kons, err = getkonvobj(msg.id);
+local ok = false;
+if kons then
+	if kons.owner_uid ~= msg.uid then
+		error_to_client("You are not authorized to do this operation"); 
+		error(string.format("an unauthorized operation attempted by uid:%d", msg.uid));
+		return; 
+	end 
+	local pkons = getkonvobj(kons.parent);
+	if pkons then
+		del_children_dfs(kons);
+		pkons.child_count = pkons.child_count - 1;
+		table.remove(pkons.children, kons.id);
+		pkons:update(); 
+	else 
+		error_to_client("There was some error deleting konversation, pls retry");
+		error(string.format("getkonvobj failed with err=%s", err));
+	end
+	ok, err = db:remove(akorp_kons_ns, { id = msg.id });
+	if not ok and err then
+		error_to_client("There was some error deleting konversation, pls retry");
+		error(string.format("db:remove failed with err=%s", err));
+		return;
+	end
+else 
+	error_to_client("There was some error deleting konversation, pls retry");
+	error(string.format("getkonvobj failed with err=%s",err));
+	return; 
+end
+respond_to_client("success");
+return; 
+end 
+
+
+--[[
+message should contain the id of the kon which corresponds to the mongodb 
+object id.
+]]
+function
+handle_get_notes(msg)
+info("konv get request");
+local kons, err = getkonvobj(msg.id);
+if kons then
+	local encbuf = json.encode(kons);
+	if encbuf then
+		luamodule.sendsvcmsg(clientid, svcname, encbuf);
+	else 
+		error_to_client("There was some error getting konversation, pls retry");
+		error("Unable to encode to json");
+	end 
+	return;
+else 
+	error_to_client("There was some error getting konversation, pls retry");
+	error(string.format("getkonvobj operation failed with err=", err));
+	return; 
+end 
+return; 
+end 
+
+
+
+
+
+
+
+
+
+--[[ 
+send an error back to client. 
+]]
+function 
+error_to_client(estring)
+local err = {};
+err.mesgtype = "error";
+err.cookie   = cookie; 
+err.error    = estring; 
+luamodule.sendsvcmsg(clientid, svcname, json.encode(err));
+return;
+end
+
+--[[
+send a response back to client 
+]]
+function 
+respond_to_client(status)
+local resp = {};
+resp.mesgtype = "response";
+resp.cookie   = cookie; 
+resp.status   = status; 
+luamodule.sendsvcmsg(clientid, svcname, json.encode(resp));
+return;
+end
+
+--[[
+relay latest 10 konversations sorted by recent time.
+]]
+function
+handle_relay_konv(status)
+info("konv relay request");
+return;
+end
+
+
+
+
+--[[
+handle the message from the client while sending back the response 
+use the same client id we recvd from the client.
+]]
+function
+handle_mesg(msg)
+cookie   = msg.cookie; 
+	    if (msg.request == "new") then 				handle_new_note(msg); 
+		elseif (msg.request == "del") then 			handle_del_note(msg); 		
+		elseif (msg.request == "get") then 			handle_get_notes(msg); 
+		elseif (msg.request == "update") then 		handle_update_note(msg); 
+	end
+return;
+end
+
+function
+notes_server_main(arg)
+posix.syslog(LOG_INFO, string.format("akorp kons server spawned"));
+logger = logging.file(akorp_kons_log, "%Y-%m-%d");
+	if not logger then
+	posix.syslog(LOG_ERR, string.format("Unable to open log file exiting"));
+	return;
+end
+info("logger module initialized"); 
+db = assert(mongo.Connection.New())
+assert(db:connect(mongo_server_addr))
+info("connected to the mongodb"); 
+local rc = luamodule.registerwithngw(arg[1], "notes");
+	if rc < 0 then
+	error("Failed to register with the network gateway");
+	return;
+end
+info("registered with network gateway"); 
+logger:setLevel(logging.INFO); --make this configurable 
+info("akorp kons server booted successfully"); 
+while 1 do
+	print("waiting on socket ... ");
+	local rbuf = nil; 
+	clientid, svcname, rbuf = luamodule.recvsvcmsg();
+	if rbuf and clientid and svcname then
+	local json = json.decode(rbuf);
+		if json then
+			handle_mesg(json);
+		else
+			error(string.format("json.decode failed for string:", json));
+		end
+	else
+		error("\nrecvsvcmsg returned nil");
+		return;
+	end
+end
+return;
+end
+
+notes_server_main(arg);
+

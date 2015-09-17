@@ -1,0 +1,8 @@
+Package: antkorp
+Priority: optional
+Version: 0.1
+Maintainer: www.antkorp.in 
+Section: web
+Architecture: amd64
+Depends: mongodb, lua5.1, luarocks, attr, apache2, dialog, perl , ecryptfs-utils
+Description: antkorp real time colloboration and communication platform.

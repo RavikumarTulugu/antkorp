@@ -1,0 +1,49 @@
+
+Konversations:
+Discuss things in realtime with our konversations. 
+Make strong points with rich text.
+Add your own categories which make sense for your group.
+Attach files to the discussions.
+Get notified when some body reacts to your posts.
+
+File manager:
+Drag and drop files/folders right into browser to upload.
+Get notified when some thing happens on files you are interested.
+Missing your favorite desktop file manager ? we got most of its 
+features covered. Right click to cut,copy,share or to see information.
+Share files between groups or with other users.
+Edit text files right in the browser with out downloading on to desktop.
+View openoffice or ms office documents and PDF documents in the browser.
+Activity logging for all the files.
+Tag files or add description to the files or folders.
+Follow files to get notified of any changes.
+Discussion on files, all discussions captured right there with an 
+attached konversations.
+Powerful lightning fast name based search, search for files or folders 
+with matching names.
+Bookmark folders to quickly reach your files.
+
+Realtime communications:
+Plugin free video/audio calling using Web RTC.
+Make video/audio calls to your co-workers. 
+Instant messaging with single/multiple users supported with complete
+history record/replay.
+
+Calendaring:
+Cross time zone calendaring.
+Create events of multiple types.
+Get notified when some body responds to your invites. 
+Discuss on events right there with attached konversations.
+Attach files with the events.
+Snooze events to be reminded later.
+
+APIs:
+Extend/customize base platform with relative ease using our APIs.
+for more information look at the examples in the examples directory in the 
+server installation.
+
+Performance:
+Built on cutting edge HTML5 features like websockets, webworkers, css3 etc.
+Neptunium delivers superior performance and bandwidth savings.
+Do more with less latency and bandwidth. Say no to page loads and waiting 
+times.

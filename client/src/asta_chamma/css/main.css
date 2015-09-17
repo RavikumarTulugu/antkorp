@@ -1,0 +1,879 @@
+/*
+ * HTML5 Boilerplate
+ *
+ * What follows is the result of much research on cross-browser styling.
+ * Credit left inline and big thanks to Nicolas Gallagher, Jonathan Neal,
+ * Kroc Camen, and the H5BP dev community and team.
+ */
+
+/* ==========================================================================
+   Base styles: opinionated defaults
+   ========================================================================== */
+
+html,
+button,
+input,
+select,
+textarea {
+    color: #222;
+}
+
+body {
+    font-size: 1em;
+    line-height: 1.4;
+}
+
+/*
+ * Remove text-shadow in selection highlight: h5bp.com/i
+ * These selection declarations have to be separate.
+ * Customize the background color to match your design.
+ */
+
+::-moz-selection {
+    background: #b3d4fc;
+    text-shadow: none;
+}
+
+::selection {
+    background: #b3d4fc;
+    text-shadow: none;
+}
+
+/*
+ * A better looking default horizontal rule
+ */
+
+hr {
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #ccc;
+    margin: 1em 0;
+    padding: 0;
+}
+
+/*
+ * Remove the gap between images and the bottom of their containers: h5bp.com/i/440
+ */
+
+img {
+    vertical-align: middle;
+}
+
+/*
+ * Remove default fieldset styles.
+ */
+
+fieldset {
+    border: 0;
+    margin: 0;
+    padding: 0;
+}
+
+/*
+ * Allow only vertical resizing of textareas.
+ */
+
+textarea {
+    resize: vertical;
+}
+
+/* ==========================================================================
+   Chrome Frame prompt
+   ========================================================================== */
+
+.chromeframe {
+    margin: 0.2em 0;
+    background: #ccc;
+    color: #000;
+    padding: 0.2em 0;
+}
+/*============================================================================
+ * akp-framwork
+ * ===========================================================================
+ */
+
+
+
+
+.power{
+	position: fixed;
+	bottom: 0px;
+	left:0px;
+	border-color:#EEEEEE;
+	border-style: solid;
+	border-top-width: 1px;
+	border-right-width: 1px;
+	border-top-right-radius: 2px;
+	color:#C53727;
+	background:#FFFFFF;
+	text-shadow:1px 1px 1px rgba(0,0,0,.1);
+	z-index: 1;
+margin: 0px;
+padding: 5px;
+}
+
+
+
+
+/* ==========================================================================
+    custom styles
+   ========================================================================== */
+  
+  /*
+   * animation
+   */
+  @-webkit-keyframes blink{
+  	from{
+  		opacity:1;
+  	}
+  	to {
+  		opacity:0;
+  	}
+  }
+  @-moz-keyframes blink{
+  	from{
+  		opacity:1;
+  	}
+  	to {
+  		opacity:0;
+  	}
+  }
+  @keyframes blink{
+  	from{
+  		opacity:1;
+  	}
+  	to {
+  		opacity:0;
+  	}
+  }
+  
+  
+  
+  
+  
+  
+  
+  @-webkit-keyframes ring{
+  	from{
+  		border-width:6px;
+  	}
+  	to {
+  		border-width:1px;
+  	}
+  }
+  @-moz-keyframes ring{
+  	from{
+  		border-width:6px;
+  	}
+  	to {
+  		border-width:1px;
+  	}
+  }
+  @keyframes ring{
+  	from{
+  		border-width:6px;
+  	}
+  	to {
+  		border-width:1px;
+  	}
+  }
+  
+  
+  .blink2{
+	-webkit-animation: ring 2s infinite;
+    -moz-animation:ring 2s infinite;
+    -o-animation:ring 2s infinite; 
+    animation:ring 2s infinite;
+    
+    -webkit-transition: border-width .5s;
+    -moz-transition: border-width .5s;
+    -o-transition: border-width .5s;
+   transition: border-width .5s;
+    
+}
+  
+  
+  
+body{
+	width:100%;
+	/*background-color:#29D3B8;*/
+}
+.auth-system{
+	background:#FFFFFF;
+}
+
+.logboard{
+	
+	height: 200px;
+    margin: 0 auto;
+    text-align: center;
+    vertical-align: middle;
+    width: 500px;
+}
+
+.facebook {
+	width: 300px;
+	height: 49px;
+	margin-bottom: 15px;
+	font-size: 17px;
+	text-align: left;
+	padding-left: 11px;
+	background-color: #3B5998;
+	padding: 2px 10px;
+	border: 1px solid transparent;
+	border-radius: 2px;
+	color: white;
+	cursor: pointer;
+	font-weight: 700;
+	font-family: inherit;
+	margin-top: 50px;
+}
+.facebook:hover {
+	box-shadow: 1px 1px 2px #999;
+}
+.asi {
+	font-size: 50px;
+	font-family: inherit;
+	color: #29D3B8;
+}
+.facebook span {
+	float: left;
+	margin-left: 11px;
+	vertical-align: middle;
+}
+.facebook_24 {
+	float: left;
+	display: inline-block;
+	width: 24px;
+	height: 24px;
+	background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyJpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIENTNSBNYWNpbnRvc2giIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NUZFNjc0NUI5ODgwMTFFMUIzMTFFRDhFRUNDQTVDNjMiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NUZFNjc0NUM5ODgwMTFFMUIzMTFFRDhFRUNDQTVDNjMiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1RkU2NzQ1OTk4ODAxMUUxQjMxMUVEOEVFQ0NBNUM2MyIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1RkU2NzQ1QTk4ODAxMUUxQjMxMUVEOEVFQ0NBNUM2MyIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/Pqg5E60AAAC2SURBVHjaYvz//z8DLQELGXq0gJgTif8CiJ/iVA3yAZHYFYgf/scE7fj0EesDMyDeAsRspHqXiUh1veQYTkocaKHxfwHxeiD+CMSn8OokMvw/oIX7BGLjjonM1Ped2nFAk3xgAMRzoGweNDkPIBZC4jfhyguMeHKyDRAfJsKRf4GYF1ewUSOIbuKLE2pYcIEayfQhKcUDNZIpw6BJpqMWjFpAOWAkslWhi1aj4a/oybCAbAAQYAAEQQQmZKPNuwAAAABJRU5ErkJggg==");
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.app{
+	
+}
+.game{
+	display: none;
+}
+.help{
+	height: auto;
+overflow: hidden;
+margin: 0px 20px;
+padding: 10px;
+background: #fff;
+}
+
+/*.header{
+	height:70px;
+	background-color:#fff;
+	width:100%;
+	position:sticky;
+	border-bottom: 1px solid #eee;
+	top:0px;
+}*/
+
+.content{
+	
+	position:absolute;
+	/*height: 100%;width: 850px;*/
+	top:40px;
+    left:0px;
+	right:0px;
+	bottom: 0px;
+	padding:10px;
+	margin:0px auto;
+	background:#eee;
+	overflow:auto;
+	
+}
+.title{
+	padding:5px 20px 5px !important;
+}
+
+.gameEnd{
+	display:none;
+}
+
+.won, .lost{
+	display: none;
+}
+.board{
+	top:10px;
+	bottom: 10px;
+	left:10px;
+	width:600px;
+	position:absolute;
+}
+.board-table{
+	height: 560px;
+	width: 560px;
+	background-color: #FFFFFF;
+    position:absolute;
+    top:25px;
+	left:25px;
+	border: 1px solid rgb(0,205,0);
+	border-collapse: separate;
+}
+
+.board-table tr td{
+	border:1px solid rgb(0,205,0);
+	display: table-cell;
+	vertical-align: top;
+	position:relative;
+	height:77px;
+	width:77px;
+}
+.board-table tr td .coin{
+	margin:2px;
+}
+.safe-zone{
+	
+}
+.cross{
+	position: absolute;
+	/*color:#29D3B8;*/
+	color:#07526E;
+	font-size: 77px;
+	width: 100%;
+height: 100%;
+background: none;
+	
+}
+
+.players{
+	width:300px;
+	height:250px;
+	
+}
+
+.blink{
+	-webkit-animation: blink 1s 1;
+}
+
+
+.startbtn button{
+	margin-left:10px;
+}
+.pawns{
+	margin:10px;
+	height:60px;
+	width:300px;
+	display:none;
+}
+.pawns img{
+	float:left;
+	border-radius: 50%;
+border: 3px solid #fff;
+box-shadow: 0px 1px 2px rgba(0,0,0,.1);
+}
+
+.players .pawns:nth-child(1) img{
+	border-color: #2ab7ec;
+}
+
+.players .pawns:nth-child(2) img{
+	border-color: red;
+}
+.players .pawns:nth-child(3) img{
+	border-color: yellow;
+}
+.players .pawns:nth-child(4) img{
+	border-color: green;
+}
+.pawns .coin{
+	margin-left:10px;
+}
+.coin{
+	font-size: 16px;
+	width:15px;
+	height:15px;
+	float:left;
+	display:block;
+	font-family:Arial, "Helvetica", sans-serif;
+	font-weight:bold;
+	color:#fff;
+	text-decoration:none;
+	text-transform:uppercase;
+	text-align:center;
+	text-shadow:1px 1px 0px #07526e;
+	padding-top:2px;
+	margin-right:auto;	
+	position:relative;
+	cursor:pointer;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-o-user-select: none;
+	user-select: none;
+	border-radius: 50%;
+	
+}
+.coin.blue{
+	border-left:solid 1px #2ab7ec;
+	background-image: linear-gradient(bottom, rgb(14,137,182) 0%, rgb(22,179,236) 100%);
+	background-image: -o-linear-gradient(bottom, rgb(14,137,182) 0%, rgb(22,179,236) 100%);
+	background-image: -moz-linear-gradient(bottom, rgb(14,137,182) 0%, rgb(22,179,236) 100%);
+	background-image: -webkit-linear-gradient(bottom, rgb(14,137,182) 0%, rgb(22,179,236) 100%);
+	background-image: -ms-linear-gradient(bottom, rgb(14,137,182) 0%, rgb(22,179,236) 100%);
+	-webkit-box-shadow: inset 0px 1px 0px #2ab7ec, 0px 1px 0px 0px #07526e, 0px 2px 2px #999;
+	-moz-box-shadow: inset 0px 1px 0px #2ab7ec, 0px 1px 0px 0px #07526e, 0px 2px 2px #999;
+	-o-box-shadow: inset 0px 1px 0px #2ab7ec, 0px 1px 0px 0px #07526e, 0px 2px 2px #999;
+	box-shadow: inset 0px 1px 0px #2ab7ec, 0px 1px 0px 0px #07526e, 0px 2px 2px #999;
+}
+.coin.pink{
+	border-left:solid 1px #dd4356;
+	background-color: red;
+	color: #ffdada;
+	
+	
+	
+	/*background-color: #cc3747;*/
+	-webkit-box-shadow: 0px 1px 0px  #8d1b27 inset, 0px 1px 0px 0px #dd4356 , 0px  2px 2px #8d1b27 ;
+	-moz-box-shadow: 0px 1px 0px  #8d1b27 inset, 0px 1px 0px 0px #dd4356 , 0px  2px 2px #8d1b27;
+	-ie-box-shadow: 0px 1px 0px  #8d1b27 inset, 0px 1px 0px 0px #dd4356 , 0px  2px 2px #8d1b27;
+	box-shadow: 0px 1px 0px  #8d1b27 inset, 0px 1px 0px 0px #dd4356 , 0px  2px 2px #8d1b27;
+
+}
+
+.coin.red{
+	border-left:solid 1px #b24132;
+	/*background-color: #e65440;*/
+	background-color:yellow;
+	color: #ffdada;
+	
+	
+	-webkit-box-shadow: 0px 1px 0px  #b24132 inset, 0px 1px 0px 0px #ea624a , 0px  2px 2px #7e2e23 ;
+	-moz-box-shadow: 0px 1px 0px  #b24132 inset, 0px 1px 0px 0px #ea624a , 0px  2px 2px #7e2e23;
+	-ie-box-shadow: 0px 1px 0px  #b24132 inset, 0px 1px 0px 0px #ea624a , 0px  2px 2px #7e2e23;
+	box-shadow: 0px 1px 0px  #b24132 inset, 0px 1px 0px 0px #ea624a , 0px  2px 2px #7e2e23;
+	
+}
+
+.coin.green{
+	border-left:solid 1px #63715a;
+	/*background-color: #78896d;*/
+	background-color:green;
+	color: #e2f1d8;	
+	webkit-box-shadow: 0px 1px 0px  #63715a inset, 0px 1px 0px 0px #63715a , 0px  2px 2px #535e4b ;
+	-moz-box-shadow: 0px 1px 0px  #63715a inset, 0px 1px 0px 0px #63715a , 0px  2px 2px #535e4b;
+	-ie-box-shadow: 0px 1px 0px  #63715a inset, 0px 1px 0px 0px #63715a , 0px  2px 2px #535e4b;
+	box-shadow: 0px 1px 0px  #63715a inset, 0px 1px 0px 0px #63715a , 0px  2px 2px #535e4b;
+
+}
+
+
+
+
+.actions{
+	position:absolute;
+	display:table;
+	top:10px;
+	left:650px;
+	right:10px;
+	bottom: 10px;
+	
+}
+#start{
+	
+}
+.start_wait{
+	display:none;
+}
+.rollCount{
+	height: 300px;
+	width: 200px;
+	display:inline-block;
+	vertical-align: middle;
+	
+}
+.count{
+	height: 250px;
+	font-size:200px;
+	width:200px;
+	color:yellowgreen;
+}
+
+
+.turn_animate{
+	-webkit-animation: blink 1s infinite;
+	-moz-animation:blink 1s infinite;
+	animation:blink 1s infinite;
+}
+
+.paused{
+    -webkit-animation-play-state:paused;
+    -moz-animation-play-state:paused;
+    -o-animation-play-state:paused; 
+    animation-play-state:paused;
+}
+.play{
+	-webkit-animation-play-state:running;
+    -moz-animation-play-state:running;
+    -o-animation-play-state:running; 
+    animation-play-state:running;
+}
+
+
+.roll_btn,#start{
+	
+	
+	/*height:30px;
+	background-color:#FFFFFF;
+	border:1px solid #EEEEEE;
+	border-radius:3px;
+	box-shadow: 0px 1px 2px rgba(255,255,255,.1);
+	color:#29D3B8;
+	line-height: 30px;
+    text-align: center;
+    width: auto;
+   */
+   
+}
+
+.roll_btn{
+	/*position: absolute;
+    right: 0;
+     -webkit-animation: blink .3s 3;*/
+}
+
+
+.roll_btn[disabled=disabled]{
+	 opacity:.5;
+}
+.roll_btn:hover{
+	box-shadow: 2px 1px 2px rgba(255,255,255,.5);
+}
+
+
+#log{
+	width: 300px;
+height: 100%;
+display: block;
+position: absolute;
+top: 0px;
+bottom: 0px;
+left: 300px;
+padding:0px 10px;
+overflow: hidden;
+}
+#log:hover{
+	overflow: auto;
+}
+.log-msg{
+	width:200px;
+	min-height: 30px;
+	height:auto;
+	background:#fff;
+	box-shadow: 0px 1px 3px rgba(0,0,0,.3);
+	color:#29D3B8;
+	padding:5px;
+	border:1px solid #EEEEEE;
+	-webkit-animation: blink .5s 1;
+	-moz-animation:blink .5s 1;
+	animation:blink .5s 1;
+	
+}
+
+
+
+.available-boards{
+	display:none;
+	background: #fff;
+min-height: 100%;
+padding: 10px;
+}
+
+.board-options
+{
+	display:block;
+	height: 30px;
+	float:left;
+	width:100%;
+}
+
+
+
+.newBoard{
+	/*padding:3px;
+	border-radius:3px;
+	background-color: #FFFFFF;
+	border:1px solid #CCCCCC;
+	float:right;*/
+	
+}
+.newBoard[disabled=true]{
+	opacity:.4;
+}
+
+
+.boards-list,.descript{
+	float:left;
+	width: 100%;
+	display: block;
+}
+.descript,.open_side{
+	float: left;
+	width:50%;
+	text-align:justify;
+}
+
+
+.navboards-btnpart,.auth-system,.fcomments{
+	width:100%;
+	margin:0px auto;
+}
+.fcomments{
+	margin-left:50px;
+}
+.descript p{
+	color: #777;
+}
+.descript h2,.descript h3{
+	color:#444;
+}
+
+.navBoards{
+	display:none;
+	text-align: center;
+padding-top: 50px;
+}
+.navboards-btnpart{
+	width: 100%;
+	float:left;
+	margin-bottom:50px;
+}
+.countDown{
+	display:none;
+}
+.brdPlayers{
+	margin:10px 0px;
+}
+.boardPanel{
+	width: 250px;
+/*height: 300px;padding: 10px;*/
+float: left;
+margin-left: 10px;
+margin-top: 10px;
+
+background-color: #fff;
+}
+
+
+
+#feedback_btn{
+	position:fixed;
+	bottom: 10px;
+	right:30px;
+	display:none;
+}
+#feedback{
+	width:90%;
+}
+
+
+.widgets{
+	padding:5px 10px;
+}
+
+
+
+/* ==========================================================================
+   Helper classes
+   ========================================================================== */
+
+/*
+ * Image replacement
+ */
+
+.ir {
+    background-color: transparent;
+    border: 0;
+    overflow: hidden;
+    /* IE 6/7 fallback */
+    *text-indent: -9999px;
+}
+
+.ir:before {
+    content: "";
+    display: block;
+    width: 0;
+    height: 150%;
+}
+
+/*
+ * Hide from both screenreaders and browsers: h5bp.com/u
+ */
+
+.hidden {
+    display: none !important;
+    visibility: hidden;
+}
+
+/*
+ * Hide only visually, but have it available for screenreaders: h5bp.com/v
+ */
+
+.visuallyhidden {
+    border: 0;
+    clip: rect(0 0 0 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}
+
+/*
+ * Extends the .visuallyhidden class to allow the element to be focusable
+ * when navigated to via the keyboard: h5bp.com/p
+ */
+
+.visuallyhidden.focusable:active,
+.visuallyhidden.focusable:focus {
+    clip: auto;
+    height: auto;
+    margin: 0;
+    overflow: visible;
+    position: static;
+    width: auto;
+}
+
+/*
+ * Hide visually and from screenreaders, but maintain layout
+ */
+
+.invisible {
+    visibility: hidden;
+}
+
+/*
+ * Clearfix: contain floats
+ *
+ * For modern browsers
+ * 1. The space content is one way to avoid an Opera bug when the
+ *    `contenteditable` attribute is included anywhere else in the document.
+ *    Otherwise it causes space to appear at the top and bottom of elements
+ *    that receive the `clearfix` class.
+ * 2. The use of `table` rather than `block` is only necessary if using
+ *    `:before` to contain the top-margins of child elements.
+ */
+
+.clearfix:before,
+.clearfix:after {
+    content: " "; /* 1 */
+    display: table; /* 2 */
+}
+
+.clearfix:after {
+    clear: both;
+}
+
+/*
+ * For IE 6/7 only
+ * Include this rule to trigger hasLayout and contain floats.
+ */
+
+.clearfix {
+    *zoom: 1;
+}
+
+/* ==========================================================================
+   EXAMPLE Media Queries for Responsive Design.
+   Theses examples override the primary ('mobile first') styles.
+   Modify as content requires.
+   ========================================================================== */
+
+@media only screen and (min-width: 35em) {
+    /* Style adjustments for viewports that meet the condition */
+}
+
+@media print,
+       (-o-min-device-pixel-ratio: 5/4),
+       (-webkit-min-device-pixel-ratio: 1.25),
+       (min-resolution: 120dpi) {
+    /* Style adjustments for high resolution devices */
+}
+
+/* ==========================================================================
+   Print styles.
+   Inlined to avoid required HTTP connection: h5bp.com/r
+   ========================================================================== */
+
+@media print {
+    * {
+        background: transparent !important;
+        color: #000 !important; /* Black prints faster: h5bp.com/s */
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+
+    a,
+    a:visited {
+        text-decoration: underline;
+    }
+
+    a[href]:after {
+        content: " (" attr(href) ")";
+    }
+
+    abbr[title]:after {
+        content: " (" attr(title) ")";
+    }
+
+    /*
+     * Don't show links for images, or javascript/internal links
+     */
+
+    .ir a:after,
+    a[href^="javascript:"]:after,
+    a[href^="#"]:after {
+        content: "";
+    }
+
+    pre,
+    blockquote {
+        border: 1px solid #999;
+        page-break-inside: avoid;
+    }
+
+    thead {
+        display: table-header-group; /* h5bp.com/t */
+    }
+
+    tr,
+    img {
+        page-break-inside: avoid;
+    }
+
+    img {
+        max-width: 100% !important;
+    }
+
+    @page {
+        margin: 0.5cm;
+    }
+
+    p,
+    h2,
+    h3 {
+        orphans: 3;
+        widows: 3;
+    }
+
+    h2,
+    h3 {
+        page-break-after: avoid;
+    }
+}

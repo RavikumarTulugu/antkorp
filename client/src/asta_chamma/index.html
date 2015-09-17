@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="no-js">
+	<!--<![endif]-->
+	<head>
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<title>asta chamma game</title>
+		<meta name="description" content="Play ashta chamma game online with your friends. We are resurrecting an age old game from south india, Asta Chamma.
+		also called as Katte Mane (Kannada), Daayam (Tamil), Kaana Duaa (Hindi)
+		Kavidi Kali (Malayalam).">
+		<meta name="viewport" content="width=device-width">
+		<!--<meta http-equiv="Cache-control" content="no-cache">-->
+
+		<!-- Place favicon.ico and apple-touch-icon.png in the root directory -->
+
+		<link rel="stylesheet" href="css/normalize.css">
+		<link rel="stylesheet" href="css/style.css">
+		<link rel="stylesheet" href="css/bootstrap.min.css">
+		<link rel="stylesheet" href="css/bootstrap-responsive.min.css">
+		
+		<link rel="stylesheet" href="css/main.css">
+		<script src="js/vendor/modernizr-2.6.2.min.js"></script>
+	</head>
+	<body>
+		<!--[if lt IE 7]>
+		<p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
+		<![endif]-->
+
+		<!-- Add your site or application content here
+		<p>Hello world! This is HTML5 Boilerplate.</p>-->
+
+		<!-- end of authentication system -->
+		
+		<p class="power">Powered by <a href="http://www.antkorp.in" target="_blank">antkorp</a></p>
+
+		<div class="app">
+
+			<header class="header navbar navbar-fixed-top">
+				<div class="navbar-inner">
+					<div class="container-fluid">
+						<a class="brand title" href="#">asta chamma</a>
+						<!--<ul class="nav">
+						<li class="active">
+						<a href="#">Boards</a>
+						</li>
+						<li>
+						<a href="#">Game</a>
+						</li>
+						</ul>-->
+						<ul class="nav pull-right">
+							<li class="widgets">
+								<a href="https://twitter.com/share" class="twitter-share-button" data-via="twitterapi" data-lang="en">Tweet</a>
+								<script>
+									! function(d, s, id) {
+										var js, fjs = d.getElementsByTagName(s)[0];
+										if (!d.getElementById(id)) {
+											js = d.createElement(s);
+											js.id = id;
+											js.src = "https://platform.twitter.com/widgets.js";
+											fjs.parentNode.insertBefore(js, fjs);
+										}
+									}(document, "script", "twitter-wjs");
+								</script>
+							</li>
+							<li class="widgets">
+								<div class="fb-like" data-href="http://www.astachamma.com" data-send="false" data-layout="button_count" data-width="450" data-show-faces="true" data-font="tahoma"></div>
+							</li>
+							<li class="widgets">
+								<div class="g-plusone"></div>
+							</li>
+							<li class="divider-vertical"></li>
+							<li class="">
+								<img id="me-pic"/><span id="me-name"></span>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</header>
+
+			<div class="content">
+				<section class="game">
+					<div class="board">
+						<table class="board-table">
+							<tr>
+								<td id="pos1"></td>
+								<td id="pos2"></td>
+								<td id="pos3"></td>
+								<td id="pos4" class="safe-zone"><div class="cross icon-cross"></div></td>
+								<td id="pos5"></td>
+								<td id="pos6"></td>
+								<td id="pos7"></td>
+							</tr>
+							<tr>
+								<td id="pos8"></td>
+								<td id="pos9"><div class="cross icon-cross"></div></td>
+								<td id="pos10"></td>
+								<td id="pos11"></td>
+								<td id="pos12"></td>
+								<td id="pos13"><div class="cross icon-cross"></div></td>
+								<td id="pos14"></td>
+							</tr>
+							<tr>
+								<td id="pos15"></td>
+								<td id="pos16"></td>
+								<td id="pos17"></td>
+								<td id="pos18"></td>
+								<td id="pos19"></td>
+								<td id="pos20"></td>
+								<td id="pos21"></td>
+							</tr>
+							<tr>
+								<td id="pos22"><div class="cross icon-cross"></div></td>
+								<td id="pos23"></td>
+								<td id="pos24"></td>
+								<td id="pos25"><div class="cross icon-cross"></div></td>
+								<td id="pos26"></td>
+								<td id="pos27"></td>
+								<td id="pos28"><div class="cross icon-cross"></div></td>
+							</tr>
+							<tr>
+								<td id="pos29"></td>
+								<td id="pos30"></td>
+								<td id="pos31"></td>
+								<td id="pos32"></td>
+								<td id="pos33"></td>
+								<td id="pos34"></td>
+								<td id="pos35"></td>
+							</tr>
+							<tr>
+								<td id="pos36"></td>
+								<td id="pos37"><div class="cross icon-cross"></div></td>
+								<td id="pos38"></td>
+								<td id="pos39"></td>
+								<td id="pos40"></td>
+								<td id="pos41"><div class="cross icon-cross"></div></td>
+								<td id="pos42"></td>
+							</tr>
+							<tr>
+								<td id="pos43"></td>
+								<td id="pos44"></td>
+								<td id="pos45"></td>
+								<td id="pos46"><div class="cross icon-cross"></div></td>
+								<td id="pos47"></td>
+								<td id="pos48"></td>
+								<td id="pos49"></td>
+							</tr>
+						</table>
+
+					</div>
+					<aside class="actions">
+						<div class="startbtn">
+							<button id="start" class="btn btn-large btn-success">
+								Start
+							</button>
+							<button id="shareApp" class="btn btn-danger">
+								Invite your friends to join
+							</button>
+							<button id="leave" class="btn btn-primary">
+								Leave Board
+							</button>
+							<p class="countDown">
+								You have to move the coin in <span id="timer"></span>
+							</p>
+
+						</div>
+						<div class="rollCount">
+							<div class="count" id="count-card">
+								2
+							</div>
+							<button class="roll_btn btn btn-danger" disabled="disabled">
+								click me to Roll
+							</button>
+						</div>
+						<div class="players">
+							<div class="pawns player1_set " id="player1">
+								<img id="player1_pic" class="pyr_pic"/><span id="player1_name"></span><span id="p11" class="coin blue"></span><span id="p12" class="coin blue"></span><span id="p13" class="coin blue"></span><span id="p14" class="coin blue"></span>
+							</div>
+							<div class="pawns player2_set " id="player2">
+								<img id="player2_pic" class="pyr_pic"/><span id="player2_name"></span><span id="p21" class="coin pink"></span><span id="p22" class="coin pink"></span><span id="p23" class="coin pink"></span><span id="p24" class="coin pink"></span>
+							</div>
+							<div class="pawns player3_set " id="player3">
+								<img id="player3_pic" class="pyr_pic"/><span id="player3_name"></span><span id="p31" class="coin red"></span><span id="p32" class="coin red"></span><span id="p33" class="coin red"></span><span id="p34" class="coin red"></span>
+							</div>
+							<div class="pawns player4_set" id="player4">
+								<img id="player4_pic" class="pyr_pic"/><span id="player4_name"></span><span id="p41" class="coin green"></span><span id="p42" class="coin green"></span><span id="p43" class="coin green"></span><span id="p44" class="coin green"></span>
+							</div>
+
+						</div>
+						<div id="log"></div>
+					</aside>
+				</section>
+				<section class="help">
+
+					<div class="descript">
+
+						<h2>Asta Chamma</h2>
+						<p>
+							We are resurrecting an age old game from south india, Asta Chamma.
+							also called as Katte Mane (Kannada), Daayam (Tamil), Kaana Duaa (Hindi)
+							Kavidi Kali (Malayalam).
+						</p>
+
+						<h4>How to play:</h4>
+						<p>
+							Your friends can be any where on the planet. Location doesn't matter.
+							Login to the site with the facebook id.
+						</p>
+						<p>
+							You will be presented with a list of waiting boards. Boards where players
+							are waiting for company. Join any of these and start playing.
+
+							or
+
+							Create a new board and invite your facebook friends to play with.
+						</p>
+
+						<h4>Game rules:</h4>
+						<p>
+							There are different variants of this game played with different rules.
+							we selected the simplest version.
+						</p>
+						<h4>Pawn start:</h4>
+						<p>
+							Every player will have 4 pawns. Game starts with all the pawns in the
+							player's home cell.
+							The pawns cannot move from home cell until the dice rolls '4' or '8',
+							after which the pawns move according to the roll count.
+						</p>
+						<h4>Turn:</h4>
+						<p>
+							If a player rolls 4 or 8 or made a kill, he will get another chance
+							to roll the dice.
+						</p>
+						<h4>Killing other player's pawns:</h4>
+						<p>
+							If the pawn moves in to the cell in which there is already a pawn of
+							other player, other player's pawn gets killed.
+						</p>
+						<p>
+							To resurrect the pawn the roll should be '4' or '8'. If the roll is '4'
+							player can get a died pawn back, if it's 8 he can get 2 pawns back.
+							To move the pawn or restore a died pawn is player's choice. Killing a
+							pawn is not possible in a home cell.
+						</p>
+
+						<h4>Game over:</h4>
+						<p>
+							The player all of whose pawns reach the central home is the winner.
+						</p>
+						<p>
+							Enjoy !!
+						</p>
+
+						Leave your feedback.
+
+					</div>
+					<div class="open_side">
+					<div class="auth-system">
+
+					</div>
+					<div class="navBoards">
+						<div class="navboards-btnpart">
+						<button class="btn btn-success btn-large" id="goBoards">
+							Play asta chamma
+						</button>
+						</div>
+						
+						
+					</div>
+					<div class="fcomments">
+					<div class="fb-comments" data-href="http://www.astachamma.com" data-width="500" data-num-posts="10"></div>
+					</div>
+</div>
+				</section>
+				<section class="available-boards">
+
+					<div class="board-options">
+						<!--<div class="input-append">
+						<input class="span2" id="query" type="text">
+						<button class="btn btn-success" type="button">
+						Search
+						</button>
+						</div>
+						or-->
+						<button class="newBoard btn">
+							Open New Board
+						</button>
+					</div>
+					<div class="boards-list"></div>
+
+				</section>
+				<section class="gameEnd">
+
+					<p class="well well-large won text-succes">
+						Congratulations! you won the game.
+					</p>
+
+					<p class="well well-large lost text-info">
+						Sorry! you just lost the game.
+						please try again..
+					</p>
+					<button class="btn btn-danger" id="pagain">
+						PLay again
+					</button>
+
+				</section>
+			</div>
+		</div><!-- end of app content -->
+
+		<a href="#myModal" role="button" class="btn btn-primary" data-toggle="modal" id="feedback_btn">Feedback</a>
+
+		<!-- Modal -->
+		<div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+					×
+				</button>
+				<h3 id="myModalLabel">Feedback</h3>
+			</div>
+
+			<div class="modal-body">
+				<textarea rows=10 cols=20  id="feedback"></textarea>
+					
+    
+
+			</div>
+			<div class="modal-footer">
+				<button class="btn" data-dismiss="modal" aria-hidden="true">
+					Close
+				</button>
+				<button class="btn btn-primary" data-dismiss="modal" id="post_fk">
+					Send
+				</button>
+			</div>
+
+		</div>
+
+		<!--<footer>
+		<p>
+		&#169;antkorp
+		</p>
+		</footer>-->
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
+		
+
+		<script src="js/bootstrap.min.js" ></script>
+		<script>
+			window.jQuery || document.write('<script src="js/vendor/jquery-1.9.0.min.js"><\/script>')
+		</script>
+		<script src="js/plugins.js"></script>
+		<script src="js/main.js"></script>
+
+		<!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+		<script type="text/javascript">
+			var _gaq = _gaq || [];
+			_gaq.push(['_setAccount', 'UA-38505047-1']);
+			_gaq.push(['_trackPageview']);
+
+			(function() {
+				var ga = document.createElement('script');
+				ga.type = 'text/javascript';
+				ga.async = true;
+				ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+				var s = document.getElementsByTagName('script')[0];
+				s.parentNode.insertBefore(ga, s);
+			})();
+
+		</script>
+	</body>
+</html>

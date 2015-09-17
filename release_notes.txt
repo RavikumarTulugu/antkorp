@@ -1,0 +1,25 @@
+About:
+Neptunium colloboration and communication platform provides software for colloboration
+and communication facilities for work groups. It has facilities for conversations, 
+instant messaging, video calling, audio calling, file storage and editing, calendaring. 
+Neptunium platform apis can be used to extend/replace parts of antkorp platform to customize
+/enhance the functionality.
+
+NOTE: 
+if you are using limited version only 10 connections are supported.
+
+Version:
+    1.1 - initial release. 
+
+Whats new:
+    Real time conversations.
+    Calendaring.
+    One to one video/audio calling.
+    Instant messaging with off-record support.
+    File storage and management.
+
+Known issues:
+    1.Unicode is not supported as of now.
+    2.Only webkit based browsers are supported in the initial release, support 
+      for other browsers is in pipeline.
+    3.APIs are not yet exposed.

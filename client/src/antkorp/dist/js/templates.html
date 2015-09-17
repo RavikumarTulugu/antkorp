@@ -1,0 +1,1576 @@
+
+<script id="post-template" type="text/x-jquery-tmpl">
+	<div class="comment">
+		<div class="user">
+			<div class="uimg">
+				<img height="42px" width="42px" src="${img}" align="left" alt="User Image" />
+			</div>
+		</div>
+		<div class="commContent">
+		<div class="commactbar">
+			<span class="commauthr" title="Posted by">${author}</span>
+			<span class="commtime">${time}</span>
+			{{if !parent}}
+			<span class="commcategory">${category}</span>
+			{{/if}}
+			
+			
+			{{if limited}}
+			
+			<span class="commaccess">Limited</span>
+			
+			{{/if}}
+			
+			
+			
+			{{if owner}}
+			<span class="commdelete icon-remove cntrl" title="Delete"></span>
+			{{/if}}
+			
+			<span class="rep icon-reply" title="Reply"></span>
+			<span class="dislikecount lc">${dislikecount}</span>
+			<span class=" commdown icon-thumbs-up-2 {{if idontlike}} active {{/if}}" title="dislike"></span>
+			
+			<span class="likecount lc">${likecount}</span>
+			<span class=" commup icon-thumbs-up {{if ilike}} active {{/if}}" title="like"></span>
+			
+			{{if owner}}
+			<span class=" commedit icon-pencil cntrl" title="edit"></span>
+			
+			{{if (locked == "true") || (locked == true)}}
+			<span class="communlock cntrl icon-unlocked" title="unlock"></span>
+			{{else}}
+			<span class=" commlock cntrl icon-lock-2" title="lock"></span>
+			{{/if}}
+			{{/if}}
+			<span class=" commcollapse icon-minus-2 " title="collapse"></span>
+		</div>
+		<div class="tagsSection">
+			{{if taglist.length}}
+			<!-- <span class="tag blue">tags: </span> -->
+			{{each taglist}}
+			<span class="tag blue commtag">${$value}</span>
+			{{/each}}
+			{{/if}}
+		</div>
+		<div class="original-comment">{{html content}}</div>
+		<div class="commChildren">
+			{{if attachments.length}}
+			<span class="commAttaches icon-file"></span>
+			{{/if}}
+			<span class="commComments">Replies(${child_count})</span>
+			
+			
+		</div>
+		
+		</div>
+		<div class="commActivity">
+			<span class="icon-arrow-up-2 hideActivity" title="Hide Activity"></span>
+			<div class="commAttachments" data-loaded=false>
+				<span class="title">Attachments</span>
+						<ul></ul>
+			</div>
+			<div class="commLikers" data-loaded=false>
+				<span class="title">People who likes this</span>
+				<ul></ul>
+				
+				
+			</div>
+			<div class="commDislikers" data-loaded=false>
+				<span class="title">People who hates this</span>
+				<ul></ul>
+			</div>
+			{{if followers}}
+			{{if followers.length}}
+			<div class="commAccessers">
+				<span class="title">people who discuss this </span>
+				<ul></ul>
+			</div>
+			{{/if}}
+			{{/if}}
+		</div>	
+	</div>	
+</script>
+
+
+
+<script id="reply-template" type="text/x-jquery-tmpl">
+	<div class="formatbar">
+		<div class="btn-group">
+		<input type="button" class="intLink btn " title="Bold" data-cmd='bold' value="B" />
+		<input type="button" class="intLink btn " title="Italic" data-cmd='italic' value="I" />
+		<input type="button" class="intLink btn " title="Underline" data-cmd='underline' value="U" />
+		</div>
+				<input type="color"  class="colorLink" list="colors"/>
+		<datalist id="colors">
+		  <option>#ff0000</option> 
+		  <option>#0000ff</option> 
+		  <option>#00ff00</option> 
+		  <option>#ffff00</option> 
+		  <option>#00ffff</option> 
+		</datalist>
+	</div>
+	<p class="commInput" contenteditable="true">
+		<span class="dfltcmttxt">Comment</span>	
+	</p>
+	<button class=" btn btn-primary commpost ">Post</button>
+	<button class=" btn commpostno ">Discard</button>
+</script>
+
+<script id="kons-entry-template" type="text/x-jquery-tmpl">
+	{{if richText}}
+	<div class="formatbar">
+		<div class="btn-group">
+		<input type="button" class="intLink btn btn-white " title="Bold" data-cmd='bold' value="B" />
+		<input type="button" class="intLink btn btn-white" title="Italic" data-cmd='italic' value="I" />
+		<input type="button" class="intLink btn btn-white" title="Underline" data-cmd='underline' value="U" />
+		</div>
+		<input type="color"  class="colorLink" list="colors"/>
+		<datalist id="colors">
+		  <option>#ff0000</option> 
+		  <option>#0000ff</option> 
+		  <option>#00ff00</option> 
+		  <option>#ffff00</option> 
+		  <option>#00ffff</option> 
+		</datalist>
+	</div>
+	
+	{{/if}}
+	
+	<div class="commInput" contenteditable= {{if richText}} "true" {{else}} "plaintext-only" {{/if}}  >
+		<span class="dfltcmttxt">Comment</span>	
+	</div>
+	
+	{{if basic!="true" }}
+	<div class="postLinkPreview">
+
+	</div>
+	<div class="postCategories">
+		<div class="selectedCTG">
+			<span class="CTGname" data-name="discussion">Discussion</span><span class="pull-right icon-angle-down"></span>
+		</div>
+	</div>
+	<div class="postcategorieslist">
+		<div class="postcategory" data-name="discussion">Discussion</div>
+			<div class="postcategory" data-name="question">Question</div>
+			<div class="postcategory" data-name="share">Share</div>
+		</div>
+	
+	<div class="linkData">
+		<input type="url" name="link" class="postURL" placeholder="Paste link"/>
+		<button class=" btn btn-success btn-icon addURL" >
+			<span class="icon-checkmark"></span>
+		</button>
+	</div>
+	
+	<div class="postAttachments">
+		<ul></ul>
+	</div>
+	<div class="tagData">
+		<input type="text" class="tagInput" value="" name="konsEntryTagInput" />
+	</div>
+	<div class="postUsers">
+		<div class="userData">
+
+		</div>
+		<div class="ubrowser">
+			<span class="icon-user-add"></span>
+		</div>
+	</div>
+	{{/if}}
+	
+	<div class="entryAction">
+		
+		{{if basic!="true" }}
+		<button class="btn btn-primary btn-icon  linkURLbtn" >
+			<span class="icon-link"></span>
+		</button>
+		<button class="btn btn-primary btn-icon  attach">
+			<span class="icon-attachment"></span>
+		</button>
+		<button class="btn btn-primary btn-icon addTag">
+			<span class="icon-tag"></span>
+		</button>
+		{{/if}}
+		
+		<!-- <button class="btn btn-icon icon-picture addPic"></button> -->
+		<button class=" btn btn-primary commpost pull-right ">Post</button>
+		<button class=" btn commpostno pull-right  ">Discard</button>
+		
+		{{if basic != "true" }}
+		<div class=" profile_btns  commfollowers">
+			<div class="commflw btn btn-primary btn-icon">
+				<span class="icon-earth follow-mode"></span>
+				<span class="icon-caret-down"></span>
+			</div>
+			<ul class="flwOpt dropdown-menu">
+				<div class="opt" data-mode="public">
+					<span class="icon-earth"></span><span class="flwopt-name">Public</span>
+				</div>
+				<div class="opt" data-mode="private">
+					<span class="icon-users-2"></span><span class="flwopt-name">Custom</span>
+				</div>
+			</ul>			
+		</div>
+		{{/if}}
+	</div>
+</script>
+
+<script id="konv-update-template" type="text/x-jquery-tmpl">
+	<div>
+		<div>
+			<div class="uimg" data-uid=${uid}>
+				<img src=${image_small} height="32" width="32" alt="user image"/>
+			</div>
+		</div>
+		<div class="update-content">
+			<span class="commusername">new ${type} by ${first_name}</span>
+			<p>${sampleContent}</p>
+		</div>
+	</div>
+</script>
+
+<script id="notification-view-template" type="text/x-jquery-tmpl">
+
+	<div class="notifications-pane">
+		<div class="notifications-title akorp-header ${className}">
+			<span>Notifications</span>
+			<button class="check-all">
+				Mark all Read
+			</button>
+		</div>
+		<div class="notifications-list">
+
+		</div>
+	</div>
+	
+</script>
+
+
+
+<script id="notification-template" type="text/x-jquery-tmpl">
+<div class="notification">
+	<div>
+	<div class="uimg" data-uid=${userid}>
+		<img src={{if img!=""}} ${img} {{else}} "css/images/user32.png"{{/if}} height="32" width="32" alt="user image"/>
+	</div>
+	</div>
+	<div class="ntfy-action">
+		<span>${name}   </span><span>${timestamp}</span>
+		
+		<span>${description}</span>
+		
+		 <!--<span>{{html preview}}</span>-->
+	</div>
+</div>
+
+
+</script>
+<script id="text-viewer-template" type="text/x-jquery-tmpl">
+<div class="text-viewer">
+	<div class="akorp-header blue tv-header">
+		<span class="title">${fname}</span>
+		<div class="tv-header-center pull-right">
+			<!--<div class="pull-left">
+				<button class="text-edit btn btn-primary">
+					<span class="icon-pencil"></span>
+				</button>
+				<div class="btn-group edit-saveOptions">
+				<button class="btn  btn-success text-save"><i class="icon-signup"></i> Save</button>
+				<button class="btn btn-danger text-cancel"><i class="icon-blocked"></i> Cancel</button>
+				</div>
+			</div>-->
+			<div class="pull-left col-lg-2">
+			<input class="input-small tv-zoom-input" type="text" value="13" disabled="disabled" /> 
+			</div>
+		<div class="btn-group">
+			<button class="btn  tv-zoom-plus"><span class="icon-plus"></span></button>
+			<button class="btn  tv-zoom-minus"><span class="icon-minus"></span></button>
+		</div>
+		</div>
+		<!--<div class="input-append pull-right ">
+			<input type="search" name="tv-search" placeholder="Type something..." />
+			<button class="btn btn-primary"><span class="icon-zoom"></span></button>
+		</div>-->
+	</div>
+	<div class="tv-body">
+		<pre>${text}</pre>
+	</div>
+</div>
+	
+</script>
+
+<script id="file-template" type="text/x-jquery-tmpl">
+	<div class='fsdiv' title="${fname} | ${size}" >
+		<div class='akorp-mime  ${mime} '></div>
+		<span class='fname fselem' >${fname}</span>
+	</div>
+</script>
+<script id="fileInfo-template" type="text/x-jquery-tmpl">
+	<div class='' >
+		<div style="text-align: center">
+		<div class='akorp-mime  ${mime} '></div>
+		<span class='fname fselem' style="font-size: 15px; color: #2C3E50;word-wrap: break-word;">${fname}</span>
+		</div>
+		<div class="" style="margin: 20px 0px;">
+		<button class="btn btn-inverse btn-icon file-info-download" data-btntxt="Download" title="Download" ><span class="icon-download"></span> </button>
+		<button class="btn btn-danger  btn-icon file-info-delete" data-btntxt="Remove" title="Delete"><span class="icon-remove"></span></button>
+		<button class="btn btn-inverse btn-icon file-info-lock" data-btntxt="Lock" title="Lock"><span class="icon-lock"></span></button>
+		<button class="btn btn-primary file-info-follow">Follow</button>
+		</div>
+		<span class="devider"></span>
+		<div>
+			<span>Description :</span>
+			<button class="desc-edit pull-right akp-mono-icon"><span class="icon-pencil "></span></button>
+			<button class="desc-save pull-right akp-mono-icon" style="display: none;color:green;"><span class="icon-signup"></span></button>
+			<p class="blur-msg file-info-desc">Write Something to know whats in the file...</p>
+		</div>
+		<span class="devider"></span>
+		<p><span class="blur-msg">File Type : </span><span style="word-wrap: break-word;">${type}</span></p>
+		<p><span class="blur-msg">Size : </span><span>${size}</span></p>
+		<p><span class="blur-msg">Location : </span><span> ${parent}</span></p>
+		<span class="devider"></span>
+		<!--
+			<div class="filesharewith">
+			<span> Shared with : </span>
+			<div>(Personal)</div>
+		</div>
+		<span class="devider"></span>
+		-->
+		<div>
+			<span> Tags :</span>
+			<button class="tag-edit pull-right akp-mono-icon"><span class="icon-pencil "></span></button>
+			<button class="tag-save pull-right akp-mono-icon" style="display: none;color:green;"><span class="icon-signup "></span></button>
+			<div class="blur-msg file-info-tags">Tag file or folder to make easy to recognise...</div>
+		</div>
+		<span class="devider"></span>
+		<!--  <p><span> Created on : </span><span>${create_timestamp}</span></p> -->
+		<!--  <p><span> Created by : </span><span>${owner_name}</span></p>   -->
+		<p><span> Last Modified : </span><span>${last_modified}</span></p>
+		<p><span> Last Accessed : </span><span>${last_accessed}</span></p>
+		<!-- <p><span> Modified by : </span><span>${modifier_name}</span></p> -->
+		<span class="devider"></span>
+		<div class="file-info-followers">
+			<span>Followers : </span>
+			<div class="file-info-followers-list">
+				
+			</div>
+		</div>
+		
+	</div>
+</script>
+
+
+<script id="window-template" type="text/x-jquery-tmpl">
+
+		<div>Vault</div>
+		<div class="window_view">
+			<div class="wndtoolbar">
+				<div class="btn-group pull-right">
+				<div class=" wnd_refresh btn btn-primary" title="refresh">
+					<span class=" refresh icon-loop"></span>
+				</div>
+				<div class=" wnd_parent btn btn-primary" title="parent directory">
+					<span class=" parent icon-arrow-up"></span>
+				</div>
+				<div class=" wnd_newfolder btn btn-primary" title="create directory">
+					<span class=" add_fldr icon-folder"></span>
+				</div>
+				</div>
+			</div>
+			<div class="wndpath">
+				<div class="prv ">
+					<span class="icon-angle-left"></span>
+				</div>
+				<ul class="pathdirs"></ul>
+				<div class="nxt ">
+					<span class="icon-angle-right"></span>
+				</div>
+			</div>
+			<div class="wndview">
+				<ul class="wnd-file-list"></ul>
+			</div>
+		</div>
+
+	
+	
+</script>
+
+
+<script id="fileSelector-template" type="text/x-jquery-tmpl">
+
+		<div>Vault</div>
+		<div class="window_view">
+			
+			<div class="wndpath">
+				<div class="prv icon-angle-left"></div>
+				<ul class="pathdirs"></ul>
+				<div class="nxt icon-angle-right"></div>
+			</div>
+			<div class="wndview">
+				<ul class="wnd-file-list"></ul>
+			</div>
+			<div class="fselector-action-bar">
+				<button class="btn profile_btns fileselectbtn">Select</button>
+			</div>
+		</div>
+
+	
+	
+</script>
+
+
+
+<script id="attachment-template" type="text/x-jquery-tmpl">
+	<div class='fattachment' >
+		<div class='akorp-mime  ${mime} '></div>
+		<div>
+			<span class='attachmentName' >${fname}</span>
+			<span class="">${size}</span>
+			{{if hasRemove}}
+			<span class="icon-cross rmAttach" title="Remove"></span>
+			{{/if}}
+		</div>
+	</div>
+</script>
+
+
+<script id="showEvent-template" type="text/x-jquery-tmpl">
+	
+	
+		
+		{{if deleted }}
+		
+		<p><span class="akorp-error-msg">* Event no longer Exists!</span></p>
+		
+		
+		{{else}}
+		<div class="sevt-head">
+			<div class="uimg" data-uid=${userid} title=${owner_name}>
+				<img src={{if img!=""}} ${img} {{else}} "css/images/user32.png"{{/if}} height="48" width="48" alt="user image"/>
+			</div>
+			
+			<p class="title evtfield">${title} </p>
+			<p><span class="closeIcon icon-close akp-close-icon" ></span></p>
+		</div>
+			
+		{{if isOwner}}
+		<p class="evtcontrol">
+			<button type="button" class="evtEdit" >
+				<span class="icon-pencil"> </span>
+			</button>
+			<button type="button" class="evtDelete" >
+				<span class="icon-remove"> </span>
+			</button>
+		</p>
+		{{/if}}
+		
+		{{if viewtype == 'hours' }}
+		<p><span class="">From : </span> ${starttime} - To : ${endtime}</p>
+				
+		{{else viewtype == 'day' }}
+		<p><span class="">From : </span>${startdate}</p>
+				
+		{{else viewtype == 'period' }}
+		 <p><span class="">From : </span>${startdate} - To : ${enddate} </p>
+		 {{/if}}
+		 
+		<p class="show_event_desc"><span class="">Description : </span><span class="evtfield evtfield-desc">${summary}</span></p>
+		<p class="sevtloc"><span class="">Location : </span><span class="evtfield">${venue}</span></p>
+		<p class="sevtreminder"><span class="">Repeat : </span><span class="evtfield-reminder">${recurring}</span></p>
+		<p class="sevttype"><span class=""> Category : </span><span class="evtfield-type">${category}</span></p>
+		
+		{{if hasAttachments}}
+		<div class="evt-ln sevt-attachments"><span class="">Attachments : </span><div class="sevt-attach-stage"></div></div>
+		{{/if}}
+		
+		<div class="evt-ln sevt-invited"><span class="">Invited : </span><div class="sevt-invite-stage"></div></div>
+		<div class="evt-ln sevt-attending"><span class="">Attending : </span><div class="sevt-accept-stage"></div></div>
+		
+		{{if isOwner }}
+		<p class="evtmodify"><button class="btn btn-danger evtsave">Save</button><button class="evtdrop btn">Cancel</button></p>
+		{{/if}}
+		
+		{{if false }} 
+		<!-- set expired != true  to display dialog -->
+		<div class="evt-ask"><h1> Are you going?</h1><div class=""><button class="btn blue icon-checkmark"></button><button class="btn redbtn icon-close"></button></div></div>
+		{{/if}}
+		
+		
+		{{/if}}
+</script>
+
+
+<script id="newEvent-template" type="text/x-jquery-tmpl">
+	<form class="newEventForm">
+	<p class="evtErrMsg"></p>
+	<div class="evt-ln"> <input type="text" placeholder="Event Title" class="eventname " value="${title}" required="required"/></div>
+	
+	{{if viewtype == 'hours' }}
+	<p><label>From</label> : ${starttime}</p>
+	<p><label>To</label> : ${endtime}</p>
+	<p><label>Date:</label><span class='evtdate'>${startdate}</span></p>
+	
+	
+	{{else viewtype == 'day' }}
+	<p><label>Date : </label><span class='evtdate'>${startdate}</span></p>
+	
+	
+	{{else viewtype == 'period' }}
+	 <p><label>From:</label><span class='evtdate' >${startdate}</span></p>
+	 <p><label>To :</label><span class='evtdate'>${enddate}</span> </p>
+	 
+	{{/if}}
+	
+	
+	<div class="evt-ln">
+		<span class="evt-ph">Description</span>
+		<p class='eventnote akp-input' contenteditable="plaintext-only" >${description}</p>
+	</div>
+	<div class="evt-ln">
+		<span class="evt-ph">Location</span>
+		<input type="text" class="eventloc akp-input" value="${venue}" placeholder="Location" />
+	</div>
+	<!--
+		<div class="evt-timezone evt-ln"></div> 
+		-->
+	<p>
+		<label>Repeat :</label>
+		<select class="evtreminder" name="reminder" required>
+			<option value="none">None</option>
+			<option value="daily">Every Day</option>
+			<option value="weekly">Every Week</option>
+			<option value="monthly">Every Month</option>
+		</select>
+	</p> 
+	<p>
+		<label>Category:</label>
+		<select class="evttype" name=evttype >
+			<option value="Meeting" >Meeting</option>
+			<option value="BirthDay" >BirthDay</option>
+		</select>
+	</p>
+	<div class="evt-ln evt-attachments"><span>Attachments</span><div class="evt-attach-container"></div></div>
+	<div class="accessUsers akp-uinput">
+		<div class="accessUsersList akp-uselector">
+	
+		</div>
+		<div class="accessUserbrowser akp-ubrowser" title="Add users">
+			<span class="icon-user-add"></span>
+		</div>
+	</div>
+	
+	<div>
+		<div class="accessChange pull-right" >
+			<div class="accessChangeBtn btn btn-icon btn-primary"  title="Public">
+				<span class="icon-earth follow-mode"></span>
+				<span class="icon-caret-down"></span>
+			</div>
+			<ul class="accessChangeOpts dropdown-menu" data-mode="public" role="menu">
+				<li class="opt" data-mode="public">
+					<span class="icon-earth"></span><span class="flwopt-name">Public</span>
+				</li>
+				<li class="opt" data-mode="private">
+					<span class="icon-users-2"></span><span class="flwopt-name">Private</span>
+				</li>
+			</ul>
+		</div>
+		<button class="btn blue  btn-icon evt-attach-btn" title="Attachments">
+			<span class="icon-attachment"></span>
+		</button>
+		<button type="button" class="btn btn-primary savebtn" title="Save Event">Save</button>
+		<button  type="button" class="btn redbtn cancelbtn" title="Clear Event">Cancel</button>
+	</div>
+</form>
+</script>
+<script id="newEventMin-template" type="text/x-jquery-tmpl">
+	{{if viewtype == 'hours' }}
+	<p> ${starttime} - ${endtime}</p>
+	
+	
+	
+	{{else viewtype == 'day' }}
+	<p>${startdate}</p>
+	
+	
+	{{else viewtype == 'period' }}
+	 <p>${startdate} - ${enddate} </p>
+	 
+	
+	
+	<div> <label>What</label> :<input type="text" class="eventname akp-input" value="${title}" /></div>
+	<div><label>Where</label> :<input type="text" class="eventloc akp-input" value="${evloc}" /></div>
+	
+	
+	<div>
+		<button class="btn savebtn">Save</button>
+		<button class="btn redbtn cancelbtn">Cancel</button>
+		<span class="evtbig">Advanced</span>
+	</div>
+
+</script>
+
+<script id="timezone-template" type="text/x-jquery-tmpl">
+	
+	<div class="akp-tzone">
+	<input type="text" readonly="true" class="akp-tzone-ivalue" placeholder="">
+	<div class="akp-tzone-dd">
+		<div class="a-f-e a-u-q-b-Ea"></div>
+	</div>
+	<div class="akp-tzone-list" role="menu" aria-haspopup="true" tabindex="-1" style="-webkit-user-select: none; visibility: visible; left: 130px; top: 258px; display: none;">
+		<div class="akp-tzone-list-item" role="menuitem" id=":sd" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-11:00] Samoa Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":se" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-11:00] Niue Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sf" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-10:00] Tahiti Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sg" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-10:00] Cook Islands Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sh" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-09:00] Hawaii-Aleutian Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":si" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-09:30] Marquesas Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sj" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-09:00] Gambier Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sk" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-08:00] Alaska Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sl" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-08:00] Pitcairn Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sm" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-07:00] Pacific Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sn" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-06:00] Mountain Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":so" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-06:00] Easter Island Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sp" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-06:00] Central Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sq" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-06:00] Galapagos Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sr" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-05:00] Ecuador Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ss" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-05:00] Peru Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":st" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-05:00] Colombia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":su" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-05:00] Eastern Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sv" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:30] Venezuela Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sw" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:00] Atlantic Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sx" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:00] Cuba Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sy" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:00] Paraguay Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":sz" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:00] Chile Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t0" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:00] Amazon Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t1" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:00] Guyana Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t2" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:00] Bolivia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t3" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-03:00] Argentina Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t4" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-03:00] Falkland Islands Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t5" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-04:00] Western Argentina Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t6" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-03:00] Uruguay Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t7" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-03:00] Suriname Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t8" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-03:00] Rothera Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":t9" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-03:00] Brasilia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ta" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-03:00] French Guiana Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tb" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-02:30] Newfoundland Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tc" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-02:00] South Georgia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":td" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-02:00] Fernando de Noronha Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":te" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-02:00] West Greenland Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tf" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-02:00] Saint Pierre and Miquelon Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tg" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT-01:00] Cape Verde Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":th" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT] East Greenland Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ti" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+01:00] Greenwich Mean Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tj" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+01:00] Western European Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tk" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT] Azores Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tl" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+02:00] Central European Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tm" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+01:00] West Africa Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tn" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+02:00] Central Africa Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":to" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+03:00] Eastern European Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tp" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+02:00] South Africa Standard Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tq" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+03:00] Syowa Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tr" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+03:00] Arabian Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ts" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+03:00] East Africa Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tt" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+03:00] Israel Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tu" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:00] Volgograd Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tv" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:00] Armenia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tw" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:00] Moscow Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tx" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:00] Mauritius Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ty" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:00] Reunion Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":tz" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:00] Seychelles Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u0" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:00] Gulf Standard Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u1" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:00] Georgia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u2" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:30] Iran Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u3" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+04:30] Afghanistan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u4" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] Turkmenistan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u5" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] Pakistan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u6" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] Maldives Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u7" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] Uzbekistan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u8" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] Mawson Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":u9" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] West Kazakhstan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ua" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] Tajikistan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ub" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] French Southern and Antarctic Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uc" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:00] Azerbaijan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ud" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:30] India Standard Time - Kolkata
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uf" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+05:45] Nepal Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ug" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:00] Yekaterinburg Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uh" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:00] Indian Ocean Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ui" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:00] East Kazakhstan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uj" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:00] Kyrgystan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uk" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:00] Vostok Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ul" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:00] Bhutan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":um" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:00] Bangladesh Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":un" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:30] Myanmar Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uo" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+06:30] Cocos Islands Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":up" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+07:00] Omsk Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uq" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+07:00] Western Indonesia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ur" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+07:00] Hovd Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":us" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+07:00] Davis Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ut" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+07:00] Indochina Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uu" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+07:00] Christmas Island Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uv" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+07:00] Novosibirsk Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uw" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Taipei Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ux" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Philippine Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uy" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Krasnoyarsk Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":uz" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Western Australia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v0" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Hong Kong Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v1" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Ulan Bator Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v2" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Malaysia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v3" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Singapore Standard Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v4" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Choibalsan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v5" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Brunei Darussalam Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v6" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] China Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v7" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:00] Central Indonesia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v8" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+08:45] Australian Central Western Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":v9" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+09:00] East Timor Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":va" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+09:00] Palau Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vb" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+09:00] Korean Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vc" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+09:00] Japan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vd" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+09:00] Irkutsk Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":ve" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+09:00] Eastern Indonesia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vf" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+09:30] Central Australia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vg" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+10:00] Chuuk Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vh" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+10:00] Dumont-d’Urville Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vi" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+10:00] Yakutsk Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vj" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+10:00] Eastern Australia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vk" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+10:00] Papua New Guinea Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vl" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+10:00] Chamorro Standard Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vm" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+10:30] Lord Howe Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vn" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:00] Solomon Islands Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vo" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:00] New Caledonia Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vp" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:00] Kosrae Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vq" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:00] Vladivostok Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vr" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:00] Vanuatu Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vs" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:00] Ponape Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vt" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:00] Macquarie Island Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vu" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:00] Sakhalin Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vv" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+11:30] Norfolk Islands Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vw" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] Marshall Islands Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vx" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] Nauru Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vy" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] Tuvalu Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":vz" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] Magadan Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w0" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] Fiji Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w1" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] Gilbert Islands Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w2" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] Wallis and Futuna Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w3" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] Wake Island Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w4" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:00] New Zealand Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w5" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+12:45] Chatham Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w6" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+13:00] Tokelau Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w7" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+13:00] Phoenix Islands Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w8" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+13:00] Tonga Time
+			</div>
+		</div>
+		<div class="akp-tzone-list-item" role="menuitem" id=":w9" style="-webkit-user-select: none;">
+			<div class="akp-tzone-list-val">
+				[GMT+14:00] Line Islands Time
+			</div>
+		</div>
+	</div>
+</div>
+	
+</script>
+
+
+<script id="calEvent-template" type="text/x-jquery-tmpl">
+	
+<div class="calevent" data-evtid=${id}>
+	<p><span class="calevent-day">${day}</span>
+		<span class="calevent-month">${month}</span>
+	</p>
+	<p><span class="evt-title">${title}</span>
+		<span>${date}</span>
+		<span>${venue}</span>
+	</p>
+	
+	
+</div>	
+	
+	
+</script>
+
+<script id="calEvent-invite-template" type="text/x-jquery-tmpl">
+	
+<div class="calevent-invite" data-evtid=${id}>
+	<p>
+		<span class="calevent-day">${day}</span>
+		<span class="calevent-month">${month}</span>
+	</p>
+	<p>
+		<span class="evt-title">${title}</span>	
+		<span class="evt-desc">${date}</span>
+		<span class="evt-venue">${venue}</span>
+	</p>
+	<div class="evt-invite-respond">
+		<span class="evt-invite-ask">Are you Attending?</span>
+		<div><button class="btn blue evt-go">Yes</button><button class="btn redbtn evt-no">No</button></div>
+	</div>
+		
+</div>	
+	
+	
+</script>
+
+
+<script id="groupCard-template" type="text/x-jquery-tmpl" >
+<div class="card-body">
+	<img src=${image_large} alt="Group Image" class="card-img" height="100px" width="100px"/>
+	<p class="card-text">
+		<span class='title akp-title alizarin medium firstCap'>${gname}</span>
+		<span class='type' >${type}</span>
+		<br/>
+		<span class="icon-user-4" ></span>
+		<span class='subTitle count'> ${member_count} Members</span>
+	</p>
+</div>
+</script>
+
+
+<script id="user-template" type="text/x-jquery-tmpl">
+	<div class="uimg" data-uid=${userid}>
+		<img src=${img} height="32" width="32" alt="user image"/>
+	</div>
+	
+</script>
+
+
+<script id="activeUser-template" type="text/x-jquery-tmpl">
+	<div>
+		<div class="uimg" data-uid=${uid}>
+			<img src={{if image_small!=""}} ${image_small} {{else}} "css/images/user32.png"{{/if}} height="32" width="32" alt="user image"/>
+		</div>
+		<span class="commusername">${first_name}</span>
+	</div>
+</script>
+
+<script id="ubrowser-template" type="text/x-jquery-tmpl" >
+	<div class="userBrowser">
+		<div class="browserHead"><span class="title">Select People</span><span class="icon-cross close pull-right"></span></div>
+		<div class="browserBody"><ul class="browsePeopleList"></ul></div>
+		<div class="browserFoot"><button class="btn greenbtn finish pull-right">Done</button></div>
+	</div>
+
+</script>
+
+
+
+
+<script id="chatmsg-template" type="text/x-jquery-tmpl">
+	<div class="chatmsg">
+	   <!-- <span class="sendername">${name}:</span> -->
+	   <div class="uimg" data-uid=${uid}>
+			<img src=${img} height="32" width="32" alt="user image"/>
+		</div>
+		
+	   <span class="chatdata"><span class="chattime">${time}</span> {{html data}}</span>
+	</div>
+</script>
+
+
+
+<script id="usertools-template" type="text/x-jquery-tmpl">
+	<div class="specname">
+		<span>${name}</span>
+		<span class="status_msg">${status_line}</span> </div>
+	<div>
+		<span class="uprfl icon-profile toolicon" title='show Profile'></span>
+		<span class="uchat  icon-bubble toolicon" title= 'start Chat'></span>
+		<span class="uvidcal icon-facetime-video toolicon" title= 'start Video Call'></span>
+		<!--<span class="umail icon-mail" title= 'Send Mail'></span> -->
+		<span class="uaudio icon-mic toolicon" title="Audio call"></span>
+	</div>
+</script>
+
+
+<script id="chat-template" type="text/x-jquery-tmpl">
+<div class=chatmembers>
+	<div class=chatparticipants></div>
+	<div class='chatinvite pull-left' >
+		<span class='icon-user-add'></span>
+		
+	</div>
+	<div class="pull-right chat-actions">
+		<span class='icon-angle-down pull-right dropdown-toggle actionBtn' data-toggle="dropdown"></span>
+		<ul class="dropdown-menu" role="menu" aria-labelledby="dropdownMenu">
+			<li class="chatOff">Go off the record</li>
+			<!--<li class="chatDel">Delete Messages</li>-->
+		</ul>
+		</div>
+</div>
+<div class="chatcontent"></div>
+<div class="chatStatus"></div>
+</script>
+
+<script id="newMemberDetailsEntryForm"  type="text/x-jquery-tmpl">
+	<div class="newinvitemember">
+		<form class="form-horizontal newMemberEntryForm">
+	<!-- Text input-->
+	<div class="control-group">
+		<label class="control-label" for="name">Name</label>
+		<div class="controls">
+			<input id="name" name="name" type="text" placeholder="Member Name" class="input-large inviteeName" required="true">
+
+		</div>
+	</div>
+
+	<!-- Text input-->
+	<div class="control-group">
+		<label class="control-label" for="email">Email ID</label>
+		<div class="controls">
+			<input id="email" name="email" type="text" placeholder="Member email" class="input-large inviteeEmail" required="true">
+
+		</div>
+	</div>
+
+	<!-- Button (Double) -->
+	<div class="control-group">
+		<label class="control-label" for="add"></label>
+		<div class="controls">
+			<button id="add" name="add" class="btn btn-success postmemberentry">
+				Add
+			</button>
+			<button id="remove" name="remove" class="btn btn-danger removememberentry">
+				Remove
+			</button>
+		</div>
+	</div>
+	</form>
+</div>
+</script>
+
+
+
+<script id="profile-template" type="text/x-jquery-tmpl">
+	<div class="profile_title span12">
+		<p class="profile_name">${first_name} ${last_name}</p>
+		<p class="profile_job">${jobtitle}</p>
+	</div>
+		<form name="profileEditForm" method="post" action="" autocomplete="on" class="profileEditForm">
+	<div class="row-fluid">
+	
+	<div class="profile_part span8">
+				
+				<p>
+					<span class='akp-label'>First Name:</span><span class="uinfo prfl_fname textinput">${first_name}</span>
+				</p>
+				<p>
+					<span class='akp-label'>Middle Name:</span><span class="uinfo prfl_mname textinput">${middle_name}</span>
+				</p>
+				<p>
+					<span class='akp-label'>Last Name:</span><span class="uinfo prfl_lname textinput">${last_name}</span>
+				</p>
+				<p>
+					<span class='akp-label'> Sex:</span><span class="uinfo prfl_sex">${sex}</span>
+				</p>
+				<p>
+					<span class='akp-label'>DOB:</span><span class="uinfo prfl_dob">${dob}</span>
+				</p>
+				
+				<p>
+					<span class='akp-label'>Mobile No:</span><span class="uinfo prfl_mobile">${mob}</span>
+				</p>
+				<p>
+					<span class='akp-label'>Home Address:</span><span class="uinfo prfl_haddr textblock">${homeaddress}</span>
+				</p>
+			<!--
+			</div>
+			<div class="profile_part span4">
+				
+			-->
+				<p>
+					<span class='akp-label'>Designation:</span><span class="uinfo prfl_designation textinput">${jobtitle}</span>
+				</p>
+				<p>
+					<span class='akp-label'>Department:</span><span class="uinfo prfl_dept textinput">${dept}</span>
+				</p>
+				<p>
+					<span class='akp-label'>Company Name:</span><span class="uinfo prfl_comp textinput">${organization}</span>
+				</p>
+				
+			</div>
+			<div class="profile_part span4">
+
+				<div class="profile_pic">
+					<div class="picInner">
+						<img id="usrpic"   alt="user image" src= {{if image_large == "" }} "css/images/stock_people.png" {{else}}${image_large}{{/if}} class="userPic" width="200" height="230"/>
+						<div id='changePic'>
+							Change Photo
+						</div>
+					</div>
+				</div>
+			</div>
+			</div>
+			
+						{{if mode == "write" }}
+						<div class="row-fluid">
+						<div class="profile_btnpart span12" >
+							<button class="btn btn-primary pull-right" id='profileEdit'>
+								Edit
+							</button>
+							
+							<button class="btn pull-right" id="profileEditCancel">
+								Cancel
+							</button>
+							
+							<button class="btn btn-success pull-right" id='profileSave'>
+								Save
+							</button>
+						</div>
+						</div>						
+						{{/if}}
+			</form>
+	
+</script>
+

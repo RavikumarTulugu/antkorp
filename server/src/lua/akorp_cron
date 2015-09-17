@@ -1,0 +1,1091 @@
+--[[
+/****************************************************************
+ * Copyright (c) Neptunium Pvt Ltd., 2014.
+ * Author: Neptunium Pvt Ltd..
+ *
+ * This unpublished material is proprietary to Neptunium Pvt Ltd..
+ * All rights reserved. The methods and techniques described herein 
+ * are considered trade secrets and/or confidential. Reproduction or 
+ * distribution, in whole or in part, is forbidden except by express 
+ * written permission of Neptunium.
+ ****************************************************************/
+]]
+
+--[[
+Cron service acts as a backend for the planner module. 
+handles all time related requests. 
+]]
+require ('mongo')
+json = require ('cjson')
+require ('posix')
+--require ('config')
+require ('akorp_utils')
+require ('akorp_common')
+lb = require ('luabridge') 
+lc = require ('luacal')
+local stp = require ('stack_trace_plus');
+debug.traceback = stp.stacktrace;
+
+clientid = 0; -- client id of the current request being handled 
+svcname  = "calendar"; -- name of the service.
+signature    = " akorp_cron: "
+cookie = 0;
+--[[
+All todays elements are loaded from the database and are soaked as and when we see that 
+any one has asked us to remind before 5 mins or 10 mins etc.
+the elements which are overdue are removed from the list and are marked as overdue for 
+the user.
+]]
+soak_list = {}; -- list of elements, loaded from the db during initialization.
+done = false;
+
+function 
+log_vevent_activity(uid, gid, vevent, activity)
+ao = activity_object.new();
+if ao then
+    ao.uid = uid; 
+    ao.gid = gid; 
+    ao.id  = vevent; 
+    ao.activity = activity;
+    ao.activity_type = "calendar";
+    ao:update();
+else
+    error("unable to allocate a new activity object:");
+end
+return;
+end
+
+--[[
+XXX:
+This is not a recursive function all it does is a shallow compare of list items
+at first level only.
+]]
+function 
+listequal(list1, list2)
+    if #list1 ~= #list2 then return false; end
+    for i=1,#list1 do
+        if list1[i] ~= list2[i] then return false; end
+    end
+return true;
+end
+
+--[[
+delete soak from the soak_list,
+there can be duplicate soaks with the same ids for different users.
+since we use the same list for snoozes as well.
+so compare field by field and then only delete the soak.
+]]
+function
+delete_soak(soak)
+local i=1
+while i <= #soak_list do
+    if soak_list[i].id == soak.id and listequal(soak_list[i].snoozers, soak.snoozers) then
+        table.remove(soak_list, i);
+    else
+        i = i + 1
+    end
+end
+return;
+end
+
+function
+delete_soak_by_id(soakid)
+local i=1
+while i <= #soak_list do
+    if soak_list[i].id == soakid then
+        table.remove(soak_list, i);
+    else
+        i = i + 1
+    end
+end
+return;
+end
+
+--[[ 
+send an error back to client. 
+]]
+function 
+error_to_client(clientid, channelid, estring)
+local err = {};
+err.mesgtype = "error";
+err.cookie   = cookie; 
+err.error    = estring; 
+lb.send2client(clientid, -1, json.encode(err));
+return;
+end
+
+--[[
+send a response back to client 
+]]
+function 
+respond_to_client(clientid, channelid, status)
+local resp = {};
+resp.mesgtype = "response";
+resp.cookie   = cookie;
+resp.status   = status;
+lb.send2client(clientid, -1, json.encode(resp));
+return;
+end
+
+function
+bcast_new_vevent_event(sender, vevent)
+local event = {};
+local encbuf = "";
+event.mesgtype  = "event";
+event.eventtype = "new_vevent";
+event.vevent = {};
+event.vevent = listcopy(vevent);
+for i,uid in ipairs(vevent.invited) do
+    encbuf = json.encode(event);
+    if encbuf then 
+        lb.send2user(uid, encbuf);  
+    else error("unable to encode the event object");
+    end
+end
+lb.send2user(sender, encbuf);
+return;
+end
+
+function
+bcast_edit_vevent_event(sender, vevent)
+local event = {};
+local encbuf = "";
+event.mesgtype  = "event";
+event.eventtype = "edit_vevent";
+event.vevent = {};
+event.vevent = listcopy(vevent);
+for i,uid in ipairs(vevent.invited) do
+    encbuf = json.encode(event);
+    if encbuf then 
+        lb.send2user(uid, encbuf); 
+    else error("unable to encode the event object");
+    end
+end
+lb.send2user(sender, encbuf);
+return;
+end
+
+function
+bcast_delete_vevent_event(sender, vevent)
+local event = {};
+local encbuf = "";
+event.mesgtype  = "event";
+event.eventtype = "delete_vevent";
+event.vevent = {};
+event.vevent = listcopy(vevent);
+for i,uid in ipairs(vevent.invited) do
+    local encbuf = json.encode(event);
+    if encbuf then 
+        lb.send2user(uid, encbuf); 
+    else error("unable to encode the event object");
+    end
+end
+lb.send2user(sender, encbuf);
+return;
+end
+
+--[[
+broadcast the event starting time reminder. 
+]]
+function
+bcast_reminder_event(soak, vevent)
+local event = {};
+event.mesgtype  = "event";
+event.eventtype = "vevent_reminder";
+event.vevent = {};
+event.vevent = listcopy(vevent);
+for i,uid in ipairs(soak.snoozers) do
+    local encbuf = json.encode(event);
+    if encbuf then
+        --info("sending reminder event to:", uid);
+        lb.send2user(uid, encbuf);  
+    else
+        error("unable to encode the event object");
+    end
+end
+return;
+end
+
+function
+enqueue_request_and_inform(rqstor, group, vevent, rqstee)
+local request = request_object.new();
+if request then
+    request.owner_gid = group;
+    request.requestor = rqstor;
+    request.requestee = listcopy(rqstee); -- list of requestees
+    request.request = "invite_vevent"; -- what is this request ?
+    request.category = "calendar"; -- can be kons, fmgr or calendar, group etc.
+    request.oid = vevent.id; -- id of the object we are acting on behalf.
+    request.active = true; -- whether request is active means not answered yet.
+    request.description = vevent.title; -- textual description of the request in detail.
+    request.create_timestamp  = lc.currenttime(); -- time stamp of the request object.
+    request:update();
+else
+    error("Unable to allocate a new request object.");
+    return;
+end
+local event = {};
+event.mesgtype  = "event";
+event.eventtype = "vevent_invite";
+event.invite = listcopy(request);
+event.invite.vevent = {};
+event.invite.vevent = listcopy(vevent);
+for i,uid in ipairs(request.requestee) do
+    local encbuf = json.encode(event);
+    if encbuf then
+        lb.send2user(uid, encbuf);  
+    else
+        error("unable to encode the event object");
+    end
+end
+return;
+end
+
+--[[
+Xlate the fullcalendar plus some additional information to the icalendar format 
+and fire an add call to the icalendar server. possible timeout and delay of seconds
+depends where the calendar server is. 
+]]
+function
+handle_add_vevent(clientid, channelid, msg)
+info("add vevent");
+local description = "";
+local vevent = vevent_object.new();
+if vevent then
+    vevent.title    = msg.title;
+    vevent.personal = msg.personal;
+    vevent.owner_uid = msg.uid;
+    vevent.owner_gid = msg.gid;
+    vevent.category  = msg.category; -- can be todo, meeting, reminder, task.
+    vevent.create_timestamp = lc.currenttime();
+    vevent.edit_timestamp = lc.currenttime();
+    vevent.attachments = listcopy(msg.attachments);
+    vevent.recurring = msg.recurring;
+    vevent.tstart = msg.tstart;
+    vevent.tend = msg.tend;
+    vevent.tstart_unix_time = lc.utc2unixtime(msg.tstart);
+    vevent.tend_unix_time = lc.utc2unixtime(msg.tend);
+    vevent.allday = msg.allday;
+    vevent.location = msg.location;
+    vevent.limited = msg.limited;
+    if not vevent.tend_unix_time then
+        error_to_client(clientid, channelid, "Invalid tstart date passed, should be in utc format");
+        error(string.format("invalid utc date passed : %s", vevent.tstart));
+        return;
+    end
+    if not vevent.tend_unix_time then
+        error_to_client(clientid, channelid, "Invalid tend date passed, should be in utc format");
+        error(string.format("invalid utc date passed : %s", vevent.tend));
+        return;
+    end
+    vevent.summary = msg.summary;
+    if msg.invited then
+        vevent.invited = listcopy(msg.invited);
+    else
+        --[[ get the group and expand its members to the invited list.]]
+        local grp = getgroupobj(vevent.owner_gid);
+        vevent.invited = listcopy(grp.members);
+    end
+    vevent.timezone = msg.timezone;
+    --[[ compute the next tstart and tend and then allocate a new event for the 
+         recurring events and put them in the database. do it until we reach the 
+        end of the year.
+        Add the newly created vevent id to the list of clones in the original vevent 
+        object.
+        rest all remain the same.
+       ]]
+    if vevent.recurring ~= "none" then
+       local recurs = {};
+       if vevent.recurring == "monthly" then
+            recurs = lc.recurmonthly(vevent.tstart, vevent.tend);
+       elseif vevent.recurring == "weekly" then
+            recurs = lc.recurweekly(vevent.tstart, vevent.tend);
+       elseif vevent.recurring == "daily" then
+            recurs = lc.recurdaily(vevent.tstart, vevent.tend);
+       end
+       for i,recur in ipairs(recurs) do
+           local clone = vevent_object_new_from_copy(vevent);
+           if clone then
+              clone.clone = true;
+              clone.original_event = vevent.id;
+              clone.recurring = "none";
+              clone.tstart = recur.tstart;
+              clone.tend = recur.tend;
+              clone.create_timestamp = lc.currenttime();
+              clone.edit_timestamp = lc.currenttime();
+              clone.tstart_unix_time = lc.utc2unixtime(clone.tstart);
+              clone.tend_unix_time = lc.utc2unixtime(clone.tend);
+              clone:update();
+              table.insert(vevent.clones, clone.id);
+              bcast_new_vevent_event(msg.uid, clone);
+           end
+       end
+    end
+    vevent:update(); --[[ update the event in the database. ]]
+    if vevent.recurring ~= "none" then
+        description = string.format("Created a %s recurring event :%s @ %s", vevent.recurring, vevent.title, vevent.tstart);
+    else
+        description = string.format("Created event :%s @ %s", vevent.title, vevent.tstart);
+    end
+    local notif = emit_notification(msg.uid, msg.gid, "calendar", "new_vevent", vevent.id, vevent.invited, description, vevent.title);
+    if notif then notify(msg.uid, notif); end
+    respond_to_client(clientid, channelid, "success")
+    bcast_new_vevent_event(msg.uid, vevent);
+    enqueue_request_and_inform(msg.uid, msg.gid, vevent, vevent.invited);
+    --[[ if this is an event scheduled for today then add it to the soak list as well.]]
+    if vevent.tstart_unix_time <= lc.todayend() then 
+        info("event added to soak list");
+        soak = {};
+        soak.deadline = vevent.tstart_unix_time - lc.currenttime();
+        if soak.deadline >= 0 then
+            soak.id       = vevent.id;
+            soak.snoozers = {};
+            soak.snoozers = listcopy(msg.invited);
+            table.insert(soak.snoozers, vevent.owner_uid);
+            table.insert(soak_list, soak);
+        end
+    end
+    return;
+end
+error("failed to allocate a new vevent.");
+return;
+end
+
+--[[
+if the event is not a recurring one then just simply replace the old 
+event with the new one.
+
+if the event is recurring then we have more work to do 
+get the old object and compare field by field with the new object. 
+the change of tstart and tend will impact the clones of the event.
+]]
+function
+handle_edit_vevent(clientid, channelid, msg)
+info("edit event");
+local oldcopy = get_vevent_object(msg.id);
+local description = "";
+--[[
+painstakingly copy every field from the message to the new event object. 
+]]
+local newcopy = vevent_object_new_from_copy(oldcopy);
+newcopy.id     = oldcopy.id;
+newcopy._id    = oldcopy._id;
+newcopy.title    = msg.title;
+newcopy.personal = msg.personal;
+newcopy.owner_uid = msg.uid;
+newcopy.owner_gid = msg.gid;
+newcopy.category  = msg.category; -- can be todo, meeting, reminder, task.
+newcopy.create_timestamp = oldcopy.create_timestamp;
+newcopy.edit_timestamp = lc.currenttime();
+newcopy.attachments = listcopy(msg.attachments);
+newcopy.recurring = msg.recurring;
+newcopy.tstart = msg.tstart;
+newcopy.tend = msg.tend;
+newcopy.tstart_unix_time = lc.utc2unixtime(msg.tstart);
+newcopy.tend_unix_time = lc.utc2unixtime(msg.tend);
+newcopy.allday = msg.allday;
+newcopy.location = msg.location;
+newcopy.limited = msg.limited;
+newcopy.summary = msg.summary;
+if msg.kons then 
+    newcopy.kons = msg.kons;
+else
+    if oldcopy.kons then 
+        newcopy.kons = oldcopy.kons;
+    end
+end
+if not newcopy.tstart_unix_time then
+    error_to_client(clientid, channelid, "Invalid tstart date passed, should be in utc format");
+    error(string.format("invalid utc date passed : %s", newcopy.tstart));
+    return;
+end
+if not newcopy.tend_unix_time then
+    error_to_client(clientid, channelid, "Invalid tend date passed, should be in utc format");
+    error(string.format("invalid utc date passed : %s", newcopy.tend));
+    return;
+end
+if msg.invited then
+    newcopy.invited = listcopy(msg.invited);
+else
+    error_to_client(clientid, channelid, "vevent object should contain invited list.");
+    error("edit vevent request missing invited list.");
+    return;
+end
+if msg.accepted then
+    newcopy.accepted = listcopy(msg.accepted);
+end
+newcopy.timezone = msg.timezone;
+if oldcopy then
+    --[[
+    if there is a change in the recurring nature then delete the old clones 
+    and then generate the new clones. 
+    ]]
+    if oldcopy.recurring ~= newcopy.recurring then
+        if newcopy.recurring ~= "none" then
+           if oldcopy.recurring ~= "none" then
+                local ok, err = db:remove(akorp_events_ns(), {original_event = msg.id});
+                if not ok and err then
+                    error_to_client(clientid, channelid, "There was some internal error editing event, Pls try again.");
+                    error("failed to delete the old event from the database");
+                    return;
+                end
+           end
+           local recurs = {};
+           if newcopy.recurring == "monthly" then
+                recurs = lc.recurmonthly(newcopy.tstart, newcopy.tend);
+           elseif newcopy.recurring == "weekly" then
+                recurs = lc.recurweekly(newcopy.tstart, newcopy.tend);
+           elseif newcopy.recurring == "daily" then
+                recurs = lc.recurdaily(newcopy.tstart, newcopy.tend);
+           end
+           for i,recur in ipairs(recurs) do
+               local clone = vevent_object_new_from_copy(newcopy);
+               if clone then
+                  clone.clone = true;
+                  clone.original_event = newcopy.id;
+                  clone.recurring = "none";
+                  clone.tstart = recur.tstart;
+                  clone.tend = recur.tend;
+                  clone.create_timestamp = lc.currenttime();
+                  clone.edit_timestamp = lc.currenttime();
+                  clone.tstart_unix_time = lc.utc2unixtime(clone.tstart);
+                  clone.tend_unix_time = lc.utc2unixtime(clone.tend);
+                  clone:update();
+                  table.insert(newcopy.clones, clone.id);
+                  bcast_edit_vevent_event(msg.uid, clone);
+               end
+           end
+        end
+    end
+
+    newcopy:update(); --[[ update the event in the database. ]]
+    if newcopy.recurring ~= "none" then
+        description = string.format("Edited a %s recurring event :%s @ %s", newcopy.recurring, newcopy.title, newcopy.tstart);
+    else
+        description = string.format("Edited event :%s @ %s", newcopy.title, newcopy.tstart);
+    end
+    local notif = emit_notification(msg.uid, msg.gid, "calendar", "edit_vevent", newcopy.id, newcopy.invited, description, newcopy.title);
+    if notif then notify(msg.uid, notif); end
+    respond_to_client(clientid, channelid, "success")
+    bcast_edit_vevent_event(msg.uid, newcopy);
+    if newcopy.tstart_unix_time <= lc.todayend() then 
+        info("event added to soak list");
+        soak = {};
+        soak.deadline = newcopy.tstart_unix_time - lc.currenttime();
+        if soak.deadline >= 0 then
+            soak.id       = newcopy.id;
+            soak.snoozers = {};
+            soak.snoozers = listcopy(msg.invited);
+            table.insert(soak.snoozers, newcopy.owner_uid);
+            table.insert(soak_list, soak);
+        end
+    end
+else
+    error("Unable to retrieve the existing event.");
+    return;
+end
+return;
+end
+
+function
+handle_del_vevent(clientid, channelid, msg)
+info("del event");
+local description = "";
+if msg.id then
+    local vevent = nil;
+    if msg.recurring == true then
+        vevent = get_vevent_object(msg.id);
+        if not vevent then
+            error("Unable to retrieve the event pointed by msg");
+            error_to_client(clientid, channelid, "There was some internal error deleting the event, Pls retry the operation");
+            return;
+        end
+        vevent = get_vevent_object(vevent.original_event);
+        if not vevent then
+            error("Unable to retrieve the original event pointed by clone");
+            error_to_client(clientid, channelid, "There was some internal error deleting the event, Pls retry the operation");
+            return;
+        end
+    else
+        vevent = get_vevent_object(msg.id);
+    end
+    if vevent then
+        if vevent.recurring ~= "none" then
+            for i,c in ipairs(vevent.clones) do
+                local clone = get_vevent_object(c);
+                if clone then
+                    bcast_delete_vevent_event(msg.uid, clone);
+                    vevent_object_delete(clone.id);
+                else
+                    error("unable to retrieve the vevent object from db");
+                end
+            end
+        end
+    else
+        error_to_client(clientid, channelid, "There was some internal error deleting event, Pls try again.");
+        error("Unable to find the event in the database");
+        return;
+    end
+    --[[ clear the clone list and then save the vevent object incase the clone is being deleted and all its 
+         occurences.]]
+    if msg.recurring == true then 
+        vevent.clones = {};
+        vevent:update();
+    end
+    vevent_object_delete(msg.id);
+    if vevent.recurring ~= "none" then
+        description = string.format("Deleted a %s recurring event :%s @ %s", vevent.recurring, vevent.title, vevent.tstart);
+    else
+        description = string.format("Deleted event :%s @ %s", vevent.title, vevent.tstart);
+    end
+    local notif = emit_notification(msg.uid, msg.gid, "calendar", "delete_vevent", vevent.id, vevent.invited, description, vevent.title);
+    if notif then notify(msg.uid, notif); end
+    respond_to_client(clientid, channelid, "success")
+    bcast_delete_vevent_event(msg.uid, vevent);
+    --delete all the notifications related to this vevent.
+    local querystr = "{".. "\"".."category".."\""..":".."\"".."calendar".."\""..",".."\"".."vevent".."\""..":".."\""..vevent.id.."\"".."}";
+    ok, err = db:remove(akorp_notif_ns(), querystr);
+    if not ok and err then
+        error("Unable to delete the notifications for the deleted konv object.");
+        return;
+    end
+    --delete all the kons assosciated with this vevent.
+    if vevent.kons ~= 0 then 
+        querystr = "{".. "\"".."category".."\""..":".."\"".."calendar".."\""..",".."\"".."vevent".."\""..":".."\""..vevent.id.."\"".."}";
+        ok, err = db:remove(akorp_kons_ns(), querystr);
+        if not ok and err then
+            error("Unable to delete the notifications for the deleted konv object.");
+            return;
+        end
+    end
+    if vevent.tstart_unix_time <= lc.todayend() then 
+        info("event being removed from soak list");
+        delete_soak_by_id(vevent.id);
+    end
+end
+return;
+end
+
+--[[
+snooze the reminder for the vevent.
+]]
+function
+handle_snooze_reminder(clientid, channelid, msg)
+info("reminder snooze");
+local soak = {};
+local interval = msg.snooze * 60; -- snooze will be in minutes.
+soak.deadline  =  interval;
+soak.id       = msg.id; 
+soak.snoozers = {};
+table.insert(soak.snoozers, msg.uid);
+table.insert(soak_list, soak);
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+cancel a snooze in progress. 
+note: There will not be any requests for events which havent reached expiry, these are requests
+for events which are explicitly snoozed by the user. 
+]]
+function
+handle_snooze_cancel(clientid, channelid, msg)
+local i=1
+while i <= #soak_list do
+    if soak_list[i].id == msg.id and item_present(soak_list[i].snoozers, msg.uid) then
+        table.remove(soak_list, i);
+    else
+        i = i + 1
+    end
+end
+respond_to_client(clientid, channelid, "success");
+return;
+end
+
+--[[
+add a reminder for the event for a particular user.
+]]
+function 
+handle_add_reminder(clientid, channelid, msg)
+info("add reminder");
+return;
+end
+
+--[[
+delete a pre existing reminder for the user.
+]]
+function 
+handle_delete_reminder(clientid, channelid, msg)
+info("delete reminder");
+return;
+end
+
+--[[
+get the events between 2 particular dates
+]]
+function
+handle_get_events(clientid, channelid, msg)
+info("get vevents");
+local range_start = lc.utc2unixtime(msg.tstart); 
+local range_end   = lc.utc2unixtime(msg.tend);
+local personal = msg.personal;
+local uid = msg.uid;
+local gid = msg.gid;
+local limit = 0;
+local querystr = "{$query : { personal : " .. tostring(personal) .. ",tstart_unix_time : {\"$gte\":".. range_start .. "},tend_unix_time : {\"$lte\":".. range_end .."}, owner_gid :" .. msg.gid .. "," .. "$or:[{invited:{$in:[".. msg.uid .."]}},".."{owner_uid:"..msg.uid.."}".."]}}";
+local q = db:query(akorp_events_ns(), querystr, limit);
+for result in q:results() do
+    local response = {};
+    response.mesgtype                = "response"; 
+    response.cookie                  = msg.cookie;
+    response.result                  = {};
+    response.result.id 				 = result.id;
+    response.result.owner_uid    	 = result.owner_uid;
+    response.result.owner_gid    	 = result.owner_gid;
+    response.result.category         = result.category;
+    response.result.url          	 = result.url;
+    response.result.create_timestamp = result.create_timestamp;
+    response.result.edit_timestamp   = result.edit_timestamp;
+    response.result.kons             = result.kons;
+    response.result.summary          = result.summary;
+    response.result.title            = result.title;
+    response.result.tstart           = result.tstart;
+    response.result.tend             = result.tend;
+    response.result.allday           = result.allday;
+    response.result.recurring        = result.recurring;
+    response.result.location         = result.location;
+    response.result.limited          = result.limited;
+    response.result.original_event   = result.original_event;
+    if result.invited then
+        response.result.invited      = {};
+        response.result.invited      = listcopy(result.invited); -- list of people who are invited. 
+    end
+    if result.accepted then 
+        response.result.accepted     = {};
+        response.result.accepted     = listcopy(result.accepted); -- list of people who have accepted the invitation.
+    end
+    if result.denied then 
+        response.result.denied       = {};
+        response.result.denied       = listcopy(result.denied); -- list of people who have explicitly denied the invitation. 
+    end
+    response.result.timezone         = result.timezone; -- time zone of the user who created the event.
+
+    if result.attachments then
+        response.result.attachments  = {};
+        response.result.attachments  = listcopy(result.attachments);
+    end
+
+    local encbuf = json.encode(response);
+    if encbuf then
+        lb.send2client(clientid, channelid, encbuf);
+    else
+        error("failed to encode the message");
+    end
+end
+return;
+end
+
+--[[
+get the vevent with the particular id.
+]]
+function
+handle_get_event(clientid, channelid, msg)
+info("get vevent");
+local vevent, err = get_vevent_object(msg.id);
+if vevent then
+    local response = {};
+    response.mesgtype = "response"; 
+    response.cookie   = cookie;
+    response.result   = listcopy(vevent);
+	local encbuf = json.encode(response);
+	if encbuf then
+		lb.send2client(clientid, channelid, encbuf);
+	else
+		error_to_client(clientid, channelid, "There was some internal error getting vevent object, pls retry");
+		error("Unable to encode to json");
+	end
+else
+	error_to_client(clientid, channelid, "The vevent was deleted with the id given.");
+	error(string.format("get_vevent_obj operation failed with err=", err));
+	return;
+end
+return;
+end
+
+function
+handle_grant_request(clientid, channelid, msg)
+local rqobj = get_request_object(msg.id);
+local actedbefore = false;
+if rqobj then
+    if rqobj.request == "invite_vevent" then
+        local vevent = get_vevent_object(rqobj.oid);
+        if vevent then
+            if item_present(vevent.invited, msg.uid) then
+                actedbefore = item_present(vevent.accepted, msg.uid) or item_present(vevent.denied, msg.uid);
+                if not actedbefore then
+                    table.insert(vevent.accepted, msg.uid);
+                    vevent:update();
+                    --[[update the clones as well if there are any. ]]
+                    if vevent.recurring then
+                        for i,cid in ipairs(vevent.clones) do
+                            local clone = get_vevent_object(cid);
+                            if clone then
+                                table.insert(clone.accepted, msg.uid);
+                                clone:update();
+                            end
+                        end
+                    end
+                    respond_to_client(clientid, channelid, "success");
+                    local description = string.format("Accepted your invite for :%s @ %s", vevent.title, vevent.tstart);
+                    local notif = emit_notification(msg.uid, msg.gid, "calendar", "invite_accepted", vevent.id, { rqobj.requestor }, description, "");
+                    if notif then notify(msg.uid, notif); end
+                end
+            end
+        remove_item(rqobj.requestee, msg.uid);
+        table.insert(rqobj.granted, msg.uid);
+        rqobj:update();
+        end
+    end
+else
+    error_to_client(clientid, channelid, "Unable to find the request");
+    error("unable to find the requested object");
+    return;
+end
+end
+
+function
+handle_decline_request(clientid, channelid, msg)
+local actedbefore = false;
+local request = get_request_object(msg.id);
+if request then 
+    if request.request == "invite_vevent" then
+        local vevent = get_vevent_object(request.oid);
+        if vevent then
+            if item_present(vevent.invited, msg.uid) then
+                actedbefore = item_present(vevent.accepted, msg.uid) or item_present(vevent.denied, msg.uid);
+                if not actedbefore then
+                    table.insert(vevent.denied, msg.uid);
+                    vevent:update();
+                    --[[update the clones as well if there are any. ]]
+                    if vevent.recurring then
+                        for i,cid in ipairs(vevent.clones) do
+                            local clone = get_vevent_object(cid);
+                            if clone then
+                                table.insert(clone.denied, msg.uid);
+                                clone:update();
+                            end
+                        end
+                    end
+                    respond_to_client(clientid, channelid, "success");
+                    local description = string.format("Declined your invite for :%s @ %s", vevent.title, vevent.tstart); 
+                    local notif = emit_notification(msg.uid, msg.gid, "calendar", "invite_declined", vevent.id, { request.requestor }, description, "");
+                    if notif then notify(msg.uid, notif); end
+                end
+            end
+        remove_item(request.requestee, msg.uid);
+        table.insert(request.denied, msg.uid);
+        request:update();
+        end
+    end
+else
+    error_to_client(clientid, channelid, "Unable to find the request object");
+    error("unable to find the request object");
+    return;
+end
+end
+
+--[[
+A soak has just expired and we need to send reminder events to all the interested
+parties. All the information can be derived from the event object pointed to by 
+the id in the soak. 
+]]
+function
+process_soak_expiry(soak, vevent)
+if soak then
+    if vevent then
+        bcast_reminder_event(soak, vevent);
+    else
+        error(string.format("Unable to find the event pointed by the soak object"), soak.id);
+        return;
+    end
+end
+return;
+end
+
+--[[
+load todays events which are to be processed. 
+]]
+function
+load_todays_events()
+info("Loading todays events.");
+local today_tstart = lc.todaystart();
+local today_tend   = lc.todayend();
+local querystr = "{$query:{tstart_unix_time:{\"$gte\":".. today_tstart .."},tend_unix_time:{\"$lte\":".. today_tend .. "}}}";
+local q = db:query(akorp_events_ns(), querystr, 0);
+--[[ 
+    soak all the event objects until they expire, point at which send a reminder 
+    message to the users, when the user chooses to snooze then add a snooze object
+    to the soaking list and continue.
+]]
+for result in q:results() do
+    local soak = {};
+    soak.deadline = result.tstart_unix_time - lc.currenttime();
+    if soak.deadline >= 0 then
+        soak.id       = result.id;
+        soak.snoozers = {};
+        soak.snoozers = listcopy(result.invited);
+        table.insert(soak.snoozers, result.owner_uid);
+        table.insert(soak_list, soak);
+    end
+end
+return;
+end
+
+--[[
+load all the objects which are due for today and
+]]
+function
+seconds_timer_callback(cookie)
+local delete_pending = {};
+--[[
+    Decrement all the soakcounts, if soak count becomes 0 then remove it from the 
+    list and then send a reminder to the user.
+  ]]
+for i=1,#soak_list do
+    soak_list[i].deadline = soak_list[i].deadline - 1;
+    --info("soaklist[i].deadline:", soak_list[i].deadline);
+    if soak_list[i].deadline <= 0 then
+        info("timer expired : ", soak_list[i].id);
+        table.insert(delete_pending, soak_list[i]);
+    end
+end
+--[[
+    process delete pending list. Get the object from the db and then make a reminder 
+    and send it all the snoozers list, finally delete the item from the soak_list as well 
+    ]]
+for i=1,#delete_pending do
+    local vevent = get_vevent_object(delete_pending[i].id);
+    if vevent then
+        process_soak_expiry(delete_pending[i], vevent);
+        delete_soak(delete_pending[i]);
+    end
+end
+delete_pending = {}; -- we are done with this fuck if off.
+--[[
+    if we reach the end of the day then load the fresh list. 
+]]
+if lc.currenttime() > lc.todayend() then 
+    info("End of the day loading fresh events ..");
+    load_todays_events();
+end
+return;
+end
+
+--[[
+get the upcoming events , marker based.
+]]
+function
+handle_upcoming_request(clientid, channelid, msg)
+info("get upcoming vevents");
+local personal = msg.personal;
+local uid = msg.uid;
+local gid = msg.gid;
+local limit = 10;
+local querystr = ""; 
+local range_start = 0;
+if msg.marker then
+    range_start = lc.utc2unixtime(msg.marker);
+else
+    range_start = lc.todayend();
+end
+querystr = "{$query : { personal : " .. tostring(personal) .. ",tstart_unix_time : {$gte:".. range_start .. "}, owner_gid :" .. msg.gid .. "," .. "$or:[{invited:{$in:[".. msg.uid .."]}},".."{owner_uid:"..msg.uid.."}".."]}, $orderby : { tstart_unix_time : 1}}";
+local q = db:query(akorp_events_ns(), querystr, limit);
+--info("range_start:", range_start);
+--info("query:", querystr);
+for result in q:results() do
+    local response = {};
+    response.mesgtype                = "response"; 
+    response.cookie                  = msg.cookie;
+    response.result                  = {};
+    response.result.id 				 = result.id;
+    --info("response.result.id:",response.result.id);
+    response.result.owner_uid    	 = result.owner_uid;
+    response.result.owner_gid    	 = result.owner_gid;
+    response.result.category         = result.category;
+    response.result.url          	 = result.url;
+    response.result.create_timestamp = result.create_timestamp;
+    response.result.edit_timestamp   = result.edit_timestamp;
+    response.result.kons             = result.kons;
+    response.result.summary          = result.summary;
+    response.result.title            = result.title;
+    response.result.tstart           = result.tstart;
+    response.result.tend             = result.tend;
+    response.result.allday           = result.allday;
+    response.result.recurring        = result.recurring;
+    response.result.location         = result.location;
+    response.result.limited          = result.limited;
+    response.result.original_event   = result.original_event;
+    if result.invited then
+        response.result.invited      = {};
+        response.result.invited      = listcopy(result.invited); -- list of people who are invited. 
+    end
+    if result.accepted then 
+        response.result.accepted     = {};
+        response.result.accepted     = listcopy(result.accepted); -- list of people who have accepted the invitation.
+    end
+    if result.denied then 
+        response.result.denied       = {};
+        response.result.denied       = listcopy(result.denied); -- list of people who have explicitly denied the invitation. 
+    end
+    response.result.timezone         = result.timezone; -- time zone of the user who created the event.
+
+    if result.attachments then
+        response.result.attachments  = {};
+        response.result.attachments  = listcopy(result.attachments);
+    end
+
+    local encbuf = json.encode(response);
+    if encbuf then
+        lb.send2client(clientid, channelid, encbuf);
+    else
+        error("failed to encode the message");
+    end
+end
+return;
+end
+
+function
+handle_calendar_mesg(clientid, channelid, msg)
+if msg.cookie then cookie = msg.cookie; end
+if 	   msg.request == "add_vevent" then handle_add_vevent(clientid, channelid, msg);
+elseif msg.request == "delete_vevent" then handle_del_vevent(clientid, channelid, msg);
+elseif msg.request == "edit_vevent" then handle_edit_vevent(clientid, channelid, msg);
+elseif msg.request == "add_reminder" then handle_add_reminder(clientid, channelid, msg);
+elseif msg.request == "delete_reminder" then handle_delete_reminder(clientid, channelid, msg);
+elseif msg.request == "snooze" then handle_snooze_reminder(clientid, channelid, msg);
+elseif msg.request == "snooze_cancel" then handle_snooze_cancel(clientid, channelid, msg);
+elseif msg.request == "get_vevents" then handle_get_events(clientid, channelid, msg);
+elseif msg.request == "get_vevent" then handle_get_event(clientid, channelid, msg);
+elseif msg.request == "grant_request" then handle_grant_request(clientid, channelid, msg);
+elseif msg.request == "decline_request" then handle_decline_request(clientid, channelid, msg);
+elseif msg.request == "get_upcoming" then handle_upcoming_request(clientid, channelid, msg);
+else
+	error(string.format("Unable to interpret mesg:%s", msg));
+end
+return;
+end
+
+function
+handle_data(clientid, channelid, data)
+info("handle data");
+local msg = json.decode(data);
+if msg then
+    handle_calendar_mesg(clientid, channelid, msg);
+else
+    error(string.format("Unable to decode the request from client: %d", clientid));
+end
+return;
+end
+
+function
+handle_control(msg)
+info("recvd control message");
+if msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_ARRIVAL then
+    info(string.format("client arrival: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CLIENT_DEPARTURE then 
+    info(string.format("client departure: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_ADD then 
+    info(string.format("channel add: %d %d", msg.clientid, msg.channelid));
+elseif msg.messageType == CONTROL_CHANNEL_MESSAGE_TYPE_CHANNEL_DELETE then
+    info(string.format("channel delete: %d %d", msg.clientid, msg.channelid));
+end
+return;
+end
+
+function
+handle_signal(sig)
+info("recvd termination signal exiting ...");
+os.exit(0);
+end
+
+function
+dump_config()
+trace("Configuration dump ...");
+trace("----------------------");
+trace("mongo_server_addr:  ", mongo_server_addr);
+trace("log_file:  ", log_file);
+trace("debug_level:  ", debug_level);
+return;
+end
+
+--[[
+read the configuration and populate the variables. 
+]]
+function
+readconfig()
+mongo_server_addr = lb.getstrconfig("system.mongo_server_address");
+log_file = lb.getstrconfig("cron.log_file");
+debug_level = lb.getstrconfig("cron.debug_level");
+return;
+end
+
+function
+calendar_server_main(arg)
+posix.sleep(3);
+lb.daemonize();
+lb.loadconfig("/etc/antkorp/antkorp.cfg");
+lb.setlevel(LOG_TRACE); --make this configurable 
+readconfig();
+dump_config();
+posix.syslog(LOG_INFO, string.format("akorp calendar server spawned"));
+local rc = lb.openlog(log_file);
+	if not rc then
+	posix.syslog(LOG_ERROR, string.format("Unable to open log file exiting"));
+	return;
+end
+info("Checking whether the system timezone is set to UTC");
+file = io.open("/etc/timezone", "r");
+if file then
+    line = file:read("*l");
+    if string.find(line, "UTC") == nil then
+        error("System timezone not set to UTC , Please set the system timezone to UTC.");
+        return;
+    end
+else
+    error("Unable to open the file /etc/timezone");
+    return;
+end
+if debug_level == "info" then log_level = LOG_INFO;
+elseif debug_level == "warning" then log_level = LOG_WARNING;
+elseif debug_level == "error" then log_level = LOG_ERROR; 
+elseif debug_level == "fatal" then log_level = LOG_FATAL;
+elseif debug_level == "trace" then log_level = LOG_TRACE;
+elseif debug_level == "debug" then log_level = LOG_DEBUG;
+end
+lb.setlevel(log_level); --make this configurable 
+info("logger module initialized"); 
+--[[
+Try to connect to the mongodatabase at the specified location.
+]]
+db = assert(mongo.Connection.New())
+assert(db:connect(mongo_server_addr))
+info("connected to the mongodb"); 
+--[[
+Try to register with network gateway and register ourself as service. 
+]]
+local estr = lb.createservice(svcname);
+if estr then
+	error(string.format("Failed to register with the network gateway:%s", estr));
+    return;
+end
+    lb.setdatarecvhandler(handle_data);
+    lb.setcontrolrecvhandler(handle_control);
+    lb.setsignalhandler(handle_signal);
+    load_todays_events();
+    lb.addperiodictimer("seconds_timer", 1000, seconds_timer_callback);
+    local estr = lb.run(); -- we never return from here until we call lb.stop().
+    error(estr);
+    return;
+end
+
+calendar_server_main(arg);

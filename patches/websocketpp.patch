@@ -1,0 +1,10 @@
+diff -r websocketpp-0.3.0-alpha3/websocketpp/transport/asio/endpoint.hpp websocketpp.bk/websocketpp/transport/asio/endpoint.hpp
+266c266,271
+<     
+---
+> 
+>     /// wraps the run_one method of the internal io_service object 
+>     std::size_t run_one() {
+>         return m_io_service->run_one();
+>     }    
+> 

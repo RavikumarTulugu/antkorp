@@ -1,0 +1,109 @@
+/****************************************************************
+ * Copyright (c) Neptunium Pvt Ltd., 2014.
+ * Author: Neptunium Pvt Ltd..
+ *
+ * This unpublished material is proprietary to Neptunium Pvt Ltd..
+ * All rights reserved. The methods and techniques described herein 
+ * are considered trade secrets and/or confidential. Reproduction or 
+ * distribution, in whole or in part, is forbidden except by express 
+ * written permission of Neptunium.
+ ****************************************************************/
+
+
+.navbar-inner {
+	background: #00adf3;
+}
+.navbar .brand {
+	color: #FFF;
+	text-shadow: 1px 1px 1px rgba(0,0,0,.3);
+	font-size: 30px;
+	font-weight: bold;
+}
+.navbar .nav > li > a {
+	color: #4876E3;
+	text-shadow: none;
+}
+.navbar .nav > li > a:focus, .navbar .nav > li > a:hover {
+	color: #FFF;
+}
+.navbar .nav > .active > a, .navbar .nav > .active > a:hover, .navbar .nav > .active > a:focus {
+	background: transparent;
+	color: #FFF;
+	box-shadow: none;
+}
+
+.navbar .btn-navbar {
+
+	color: #FFF;
+	text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+	background-color: #4876E3;
+	background-image: -moz-linear-gradient(top,#4876E3,#1257EB);
+	background-image: -webkit-gradient(linear,0 0,0 100%,from(#4876E3),to(#1257EB));
+	background-image: -webkit-linear-gradient(top,#4876E3,#1257EB);
+	background-image: -o-linear-gradient(top,#4876E3,#1257EB);
+	background-image: linear-gradient(to bottom,#4876E3,#1257EB);
+	background-repeat: repeat-x;
+	border-color: #1257EB #1257EB #4876E3;
+	border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
+	-webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 0 rgba(255, 255, 255, 0.075);
+	-moz-box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 1px 0 rgba(255,255,255,0.075);
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 1px 0 rgba(255, 255, 255, 0.075);
+}
+
+.navbar .btn-navbar:hover, .navbar .btn-navbar:focus, .navbar .btn-navbar:active, .navbar .btn-navbar.active, .navbar .btn-navbar.disabled, .navbar .btn-navbar[disabled] {
+	color: #FFF;
+	background-color: #1257EB;
+}
+
+
+
+.dropdown-menu {
+	background: #FFF;
+	height: auto;
+	color: #999;
+	box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.3);
+	border-radius: 2px;
+	padding: 5px;
+	min-width: 130px;
+}
+.dropdown-menu > li {
+	margin: 2px 0px;
+	height: 30px;
+	text-align: left;
+	padding: 0px 5px;
+	line-height: 30px;
+}
+.dropdown-menu > li:hover:not(.disabled),.dropdown-menu > li.active{
+	background-color: #12a6eb;
+	color: #FFFFFF;
+}
+
+
+
+/*
+ * Alerts
+ */
+
+.alert{
+	border-radius: 0px;
+	text-shadow:none;
+	text-align:center;
+	font-size:13px;
+	
+}
+.alert-info{
+	background-color: #12A6EB;
+	color:#FFF;
+	border-width: 0px;
+}
+.alert-error{
+	background-color:#D14836;
+	color: #FFF;
+	border-width: 0px;
+}
+
+button.btn.btn-large{
+	padding: 11px 19px;
+    font-size: 17.5px;
+}
+
