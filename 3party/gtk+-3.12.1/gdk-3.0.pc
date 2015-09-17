@@ -1,0 +1,13 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+targets=x11 broadway
+
+Name: GDK
+Description: GTK+ Drawing Kit
+Version: 3.12.1
+Requires: pango pangocairo gdk-pixbuf-2.0 >= 2.27.1 cairo >= 1.12.0 cairo-gobject >= 1.12.0
+Requires.private: gio-unix-2.0 >= 2.39.5 fontconfig x11 xext xinerama xi xrandr xcursor xfixes xcomposite xdamage   cairo-xlib cairo pangoft2
+Libs: -L${libdir} -lgdk-3 
+Cflags: -I${includedir}/gtk-3.0 
