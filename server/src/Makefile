@@ -27,6 +27,7 @@ STRIP=strip
 
 #Makefile to compile all the akorp daemons
 LIBS= -L/usr/local/lib \
+   		-L../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/sharedclient \
    		-L../../3party/mongo-cxx-driver-v2.4/ \
    		-L../../3party/snappy-1.1.2/.libs/ \
    		-L../../3party/leveldb-1.15.0/ \
@@ -59,6 +60,9 @@ INCLUDES= -I/usr/local/include/mongo  \
 			-I../../3party/dtl-1.18/ \
             -I../../3party/snappy-1.1.2/ \
             -I../../3party/leveldb-1.15.0/ \
+   			-I../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/ \
+   			-I../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/src/mongo \
+   			-I../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/src/ \
 			-I../../3party/mongo-cxx-driver-v2.4/ \
 			-I../../3party/mongo-cxx-driver-v2.4/src/mongo/ \
 			-I../../3party/mongo-cxx-driver-v2.4/src/ \
@@ -130,7 +134,8 @@ all: 3rdparty akorp_stuff
 prod: all
 
 mongo_cpp_driver:
-	scons -C ../../3party/mongo-cxx-driver-v2.4/ -f ../../3party/mongo-cxx-driver-v2.4/SConstruct --config=force
+	#scons -C ../../3party/mongo-cxx-driver-v2.4/ -f ../../3party/mongo-cxx-driver-v2.4/SConstruct --config=force
+	scons -C ../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/ -f ../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/SConstruct --config=force --use-system-boost --disable-warnings-as-errors --sharedclient
 
 luamongo: mongo_cpp_driver
 	make -C ../../3party/luamongo-master/ -f ../../3party/luamongo-master/Makefile
@@ -219,7 +224,8 @@ fattr: fattr.cc
 
 
 clean:
-	scons -C ../../3party/mongo-cxx-driver-v2.4/ -f ../../3party/mongo-cxx-driver-v2.4/SConstruct -c
+	#scons -C ../../3party/mongo-cxx-driver-v2.4/ -f ../../3party/mongo-cxx-driver-v2.4/SConstruct -c
+	scons -C ../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/ -f ../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/SConstruct -c --use-system-boost --disable-warnings-as-errors 
 	make -C ../../3party/luamongo-master/ -f ../../3party/luamongo-master/Makefile clean;
 	rm -rf $(OBJ)
 	rm -rf *.o *.so *.a

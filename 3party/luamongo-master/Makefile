@@ -3,7 +3,7 @@ CFLAGS= -g -O2 -shared -fPIC -I /usr/include/lua5.1/ -I ../mongo-cxx-driver-v2.4
 AR= ar rcu
 RANLIB= ranlib
 RM= rm -f
-LIBS=-L../mongo-cxx-driver-v2.4/ -lmongoclient -lboost_thread -lboost_filesystem
+LIBS=-L../mongo-cxx-driver-v2.4/ -L../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/sharedclient -lmongoclient -lboost_thread -lboost_filesystem
 OUTLIB=mongo.so
 
 LDFLAGS= $(LIBS)
