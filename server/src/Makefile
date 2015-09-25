@@ -127,7 +127,7 @@ JSON_LIB_OBJ= $(OBJ)/internalJSONNode.o  \
 
 akorp_stuff: akorp_lib akorp_fmgr akorp_ngw luabridge luacal akorp_simple clntsim clientmodule fattr akorp_broadway_tunneld
 
-3rdparty: mongo_cpp_driver luamongo lualdap lua-gd jq  jemalloc broadwayd snappy leveldb
+3rdparty: mongo_cpp_driver luamongo lualdap lua-gd jq  jemalloc snappy leveldb
 
 all: 3rdparty akorp_stuff 
 

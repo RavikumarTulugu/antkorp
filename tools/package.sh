@@ -72,19 +72,19 @@ cp $2/3party/luamongo-master/mongo.so $dest_dir/opt/antkorp/foreign/lib/
 cp $2/3party/jemalloc-3.4.1/lib/libjemalloc.so.1 $dest_dir/opt/antkorp/foreign/lib/libjemalloc.so
 cp $2/3party/jq-1.3/jq $dest_dir/opt/antkorp/foreign/bin/
 
-cp $2/3party/gtk+-3.12.1/gdk/broadway/broadwayd $dest_dir/opt/antkorp/foreign/bin/
-cp $2/3party/gtk+-3.12.1/gtk/.libs/lt-gtk-query-immodules-3.0 $dest_dir/opt/antkorp/foreign/bin/
-cp $2/3party/gtk+-3.12.1/gtk/.libs/gtk-query-immodules-3.0 $dest_dir/opt/antkorp/foreign/bin/
-cp $2/3party/gtk+-3.12.1/gtk/.libs/gtk-launch $dest_dir/opt/antkorp/foreign/bin/
-cp $2/3party/gtk+-3.12.1/gtk/.libs/*.so* $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/gtk+-3.12.1/gtk/.libs/*.la $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/gtk+-3.12.1/gdk/.libs/*.so* $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/gtk+-3.12.1/gdk/.libs/*.la $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/gtk+-3.12.1/libgail-util/.libs/libgailutil-3.so $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/gtk+-3.12.1/modules/input/.libs/*.so $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/gtk+-3.12.1/modules/printbackends/lpr/.libs/libprintbackend-lpr.so $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/gtk+-3.12.1/modules/printbackends/file/.libs/libprintbackend-file.so $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/gtk+-3.12.1/modules/printbackends/file/.libs/libprintbackend-file.so $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/gdk/broadway/broadwayd $dest_dir/opt/antkorp/foreign/bin/
+#cp $2/3party/gtk+-3.12.1/gtk/.libs/lt-gtk-query-immodules-3.0 $dest_dir/opt/antkorp/foreign/bin/
+#cp $2/3party/gtk+-3.12.1/gtk/.libs/gtk-query-immodules-3.0 $dest_dir/opt/antkorp/foreign/bin/
+#cp $2/3party/gtk+-3.12.1/gtk/.libs/gtk-launch $dest_dir/opt/antkorp/foreign/bin/
+#cp $2/3party/gtk+-3.12.1/gtk/.libs/*.so* $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/gtk/.libs/*.la $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/gdk/.libs/*.so* $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/gdk/.libs/*.la $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/libgail-util/.libs/libgailutil-3.so $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/modules/input/.libs/*.so $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/modules/printbackends/lpr/.libs/libprintbackend-lpr.so $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/modules/printbackends/file/.libs/libprintbackend-file.so $dest_dir/opt/antkorp/foreign/lib/
+#cp $2/3party/gtk+-3.12.1/modules/printbackends/file/.libs/libprintbackend-file.so $dest_dir/opt/antkorp/foreign/lib/
 
 #copy the antkorp libraries and executables 
 cp $2/server/src/obj/akorp_ngw $dest_dir/opt/antkorp/custom/bin/ 
