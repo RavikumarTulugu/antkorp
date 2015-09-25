@@ -9,12 +9,12 @@
 #*written permission of Neptunium.
 #****************************************************************/
 
-CC=clang++
-LD=clang++
+CC=g++-5
+LD=g++-5
 #CC=clang++ -fsanitize=address -fno-omit-frame-pointer -fsanitize=thread
 #LD=clang++ -fsanitize=address -fsanitize=thread
 LIBAKORP=libakorp.so
-CFLAGS= -c -Wall -O2 -g -std=c++0x -pthread -Wwrite-strings -DLUA_COMPAT_MODULE -Wattributes -DBOOST_ALL_DYN_LINK -D_WEBSOCKETPP_CPP11_STL_ -DWSPP_CPP11_ENABLED -DAKORP_SSL_CAPABLE -Wunused-function -DLIMITED -DHTTP_TUNNEL_SUPPORT
+CFLAGS= -c -Wall -O2 -g -std=c++0x -pthread -Wwrite-strings -DLUA_COMPAT_MODULE -Wattributes -DBOOST_ALL_DYN_LINK -D_WEBSOCKETPP_CPP11_STL_ -DWSPP_CPP11_ENABLED -DAKORP_SSL_CAPABLE -Wunused-function -DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT -D_GLIBCXX_USE_CXX11_ABI -DLIMITED -DHTTP_TUNNEL_SUPPORT -DBOOST_LOG_DYN_LINK -DBOOST_THREAD_PLATFORM_PTHREAD
 OBJ= obj
 LDFLAGS= 
 MV=mv
