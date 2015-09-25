@@ -88,7 +88,7 @@ cp $2/3party/jq-1.3/jq $dest_dir/opt/antkorp/foreign/bin/
 
 #copy the antkorp libraries and executables 
 cp $2/server/src/obj/akorp_ngw $dest_dir/opt/antkorp/custom/bin/ 
-cp $2/server/src/obj/akorp_broadway_tunneld $dest_dir/opt/antkorp/custom/bin/ 
+#cp $2/server/src/obj/akorp_broadway_tunneld $dest_dir/opt/antkorp/custom/bin/ 
 cp $2/server/src/obj/akorp_fmgr $dest_dir/opt/antkorp/custom/bin/
 cp $2/server/src/obj/clntsim $dest_dir/opt/antkorp/custom/bin/
 cp $2/server/src/obj/fattr $dest_dir/opt/antkorp/custom/bin/
@@ -133,7 +133,7 @@ cp $2/init/upstart/antkorp_kons.conf $dest_dir/etc/init/
 cp $2/init/upstart/antkorp_cron.conf $dest_dir/etc/init/
 cp $2/init/upstart/antkorp_rtc.conf $dest_dir/etc/init/
 #cp $2/init/upstart/antkorp_broadway.conf $dest_dir/etc/init/
-cp $2/init/upstart/antkorp_broadway_tunnel.conf $dest_dir/etc/init/
+#cp $2/init/upstart/antkorp_broadway_tunnel.conf $dest_dir/etc/init/
 cp -R $2/client/src/antkorp/dist/*  $dest_dir/var/www/antkorp/
 cp $2/license  $dest_dir/opt/antkorp/
 cp $2/legal $dest_dir/opt/antkorp/
