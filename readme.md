@@ -9,7 +9,7 @@
 - site     - website files for the antkorp website.
 - 3party   - 3rd party source code which needs to be shipped along with 
        the product, mostly jquery or javascript libraries which 
-	   are from public domain.
+       are from public domain.
 - mockups  - directory where mockups are stored.
 - tools  -  directory contains the scripts needed for setting up antkorp 
 
@@ -78,7 +78,9 @@ x) *luarocks*
 
 xi) rocks to be installed - lualogging, luasocket, luaposix, json4lua, stdlib , luasec
 	make sure you have libssl already installed on the system before luasec 
-	install luasec with command "sudo luarocks install luasec OPENSSL_LIBDIR=/usr/lib/i386-linux-gnu/"
+	install luasec with command 
+	
+`sudo luarocks install luasec OPENSSL_LIBDIR=/usr/lib/i386-linux-gnu/`
     
     install luabitop rock 
     install luaposix rock 
@@ -191,10 +193,10 @@ libreoffice build flags:
 
 
 Compiling libreoffice 4.0 series:
-----------------------------------
+--------------------------------
     ./autogen.sh CC=clang CXX=clang++ --build=x86_64-linux-gnu --host=x86_64-linux-gnu  --target=x86_64-linux-gnu  --enable-gtk3 --without-system-libs --without-java --without-doxygen  --without-system-libcmis --without-system-mdds --without-system-graphite --without-system-orcus --without-system-lpsolve --disable-gstreamer-0-10 --without-system-boost --disable-dbus --disable-gconf --disable-cups --without-system-libxml --with-system-cairo --with-boost-date-time  --with-boost-system --disable-python   --with-parallelism --without-helppack-integration --without-myspell-dicts
 
 Compiling 3.5.7.2
-------------------
+-----------------
     ./autogen.sh --build=x86_64-linux-gnu --host=x86_64-linux-gnu  --target=x86_64-linux-gnu  --enable-gtk3 --without-system-libs --without-java --without-doxygen  --without-system-libcmis --without-system-mdds --without-system-graphite --without-system-orcus --without-system-lpsolve --disable-gstreamer --without-system-boost --disable-dbus --disable-gconf --disable-cups --without-system-libxml --with-system-cairo --with-boost-date-time  --with-boost-system --disable-python   --with-parallelism --without-helppack-integration --without-myspell-dicts --without-system-openssl --disable-mozilla --disable-odk --disable-mathmldtd --disable-neon --enable-icecream --disable-nsplugin --disable-postgresql-sdbc --disable-ldap
 
