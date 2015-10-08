@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Antkorp</title>
+
+    <!-- Bootstrap -->
+    <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="bower_components/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+  <body >
+
+    <nav class="navbar navbar-default navbar-fixed-top">
+  <div class="container">
+    <!-- Brand and toggle get grouped for better mobile display -->
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Antkorp</a>
+    </div>
+
+    <!-- Collect the nav links, forms, and other content for toggling -->
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+        <li ><a href="index.html">Home <span class="sr-only">(current)</span></a></li>
+        <li class="active"><a href="#">Install</a></li>
+          
+        </li>
+      </ul>
+     
+      <!-- <ul class="nav navbar-nav navbar-right">
+        <li><a href="#">Link</a></li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Dropdown</span></a>
+          
+        </li>
+      </ul> -->
+    </div><!-- /.navbar-collapse -->
+  </div><!-- /.container-fluid -->
+</nav>
+<div class="row-fluid">
+  <div class="col-md-3" id="instruct-nav" style="height:100%;overflow:auto;">
+      <div class="navbar list-group" id="sidebar">
+                <div class="nav  " >
+                    <a href="#c1" class="list-group-item"> Structure
+                        </a>
+                    
+                     <a href="#c2" class="list-group-item" >XATTR on Ubuntu
+                        </a>
+                    
+                     <a href="#c3" class="list-group-item">QT5 onUbuntu
+                        </a>
+                    
+                     <a href="#c4" class="list-group-item" >LDAP Support
+                        </a>
+                    
+                     <a href="#c5" class="list-group-item" >Firewall Rules
+                        </a>
+                    
+                     <a href="#c6" class="list-group-item" >Clone Ubuntu VM
+                        </a>
+                    
+                     <a href="#c7" class="list-group-item" >Dependencies
+                        </a>
+                    
+                     <a href="#c8" class="list-group-item" >GTK broadway
+                        </a>
+                    
+                     <a href="#c9" class="list-group-item" >Start virtual box VM
+                        </a>
+                    
+                     <a href="#c10" class="list-group-item" >Gotchas
+                        </a>
+                    
+                     <a href="#c11" class="list-group-item" >apt-repository
+                        </a>
+                    
+                     <a href="#c12" class="list-group-item" >Apache2 virtual site
+                        </a>
+                    
+                     <a href="#c13" class="list-group-item" >Redirecting from 443 to 8080
+                        </a>
+                    
+                     <a href="#c14" class="list-group-item" >Disabling SSL
+                        </a>
+                    
+                     <a href="#c15" class="list-group-item" >Enabling SSL
+                        </a>
+                    
+                     <a href="#c16" class="list-group-item" >CEPH on Ubuntu
+                        </a>
+                    
+                     <a href="#c17" class="list-group-item" >RSYNC
+                        </a>
+                    
+                     <a href="#c18" class="list-group-item" >LIBRE OFFICE
+                        </a>
+                    
+                </div>
+  </div>
+</div>
+  <div class="col-md-9"  id="instruct-content" data-spy="scroll" data-target="#instruct-nav">
+
+        <h2 id="c1">Structure</h2>
+        <hr>         
+<ul>
+<li><strong>build.sh</strong> - master build script which builds and bakes rpm packages.</li>
+<li><strong>Client</strong> - client side source code</li>
+<li><strong>Server</strong> - server side source code&nbsp;</li>
+<li><strong>Docs</strong> - design documentation for the product&nbsp;</li>
+<li><strong>Site</strong> - website files for the antkorp website.</li>
+<li><strong>3party</strong> - 3rd party source code which needs to be shipped along with the product, mostly jquery or javascript libraries which are from public domain.</li>
+<li><strong>Mockups</strong> - directory where mockups are stored.</li>
+<li><strong>Tools</strong> - directory contains the scripts needed for setting up antkorp</li>
+</ul>
+
+<h2 id="c2">install and enable xattr on ubuntu : </h2>
+<hr>
+<code>sudo apt-get install attr </code><br>
+vim /etc/fstab <br>
+put user_xattr on the line partition ext4.<br>
+
+
+<h2 id="c3">installing qt5 on ubuntu : </h2>
+<hr>
+Install dependencies of Qt 4 “sudo apt-get build-dep libqt4-dev”<br>
+Install additional dependencies “sudo apt-get install gperf bison” (needed to compile QtWebkit)<br>
+Install xcb dependencies “sudo apt-get install libxcb1 libxcb1-dev libx11-xcb1 libx11-xcb-dev libxcb-keysyms1 libxcb-keysyms1-dev libxcb-image0 libxcb-image0-dev libxcb-shm0 libxcb-shm0-dev libxcb-icccm4 libxcb-icccm4-dev libxcb-sync0 libxcb-sync0-dev libxcb-xfixes0-dev libxrender-dev libxcb-shape0-dev”<br>
+cd to the directory where you extracted the tarball and run ./configure (with the options suggested above)<br>
+Run “./build” and wait for some time. If you have multiple cores, use ./build -j &lt; number of cores&gt; to speed up the build process<br>
+
+
+
+<h2 id="c4">LDAP Support </h2>
+<hr>
+installing ldap support on ubuntu for users to have home directories on the server<br>
+install ldap on the server and make sure the ldap user is able to login to the system <br>
+
+<h2 id="c5">Firewall Rules </h2>
+<hr>
+installing firewall rules on the webserver to forward websocket traffic to another server which is running akorp_ngw<br>
+sysctl net.ipv4.ip_forward=1<br>
+iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to 192.168.0.113:443<br>
+iptables -t nat -A POSTROUTING -j MASQUERADE -p tcp -d 192.168.0.113 --dport 443 <br>
+
+<h2 id="c6">Clone Ubuntu VM</h2>
+<hr>
+how to clone ubuntu vm :
+after clone operation on the ui 
+change hostname in /etc/hosts and /etc/hostname <br>
+<code>$ sudo rm /etc/udev/rules.d/70-persistent-net.rules</code><br>
+<code>$ sudo mkdir /etc/udev/rules.d/70-persisitent-net.rules</code><br>
+
+
+install libtool and autoconf before installing any of the below libraries 
+<h2 id="c7">dependencies need to be installed from source to build antkorp:</h2>
+<hr>
+<b>install libtool and autoconf before installing any of the below libraries </b>
+i) poco <br>
+ii) boost <br>
+vii) mongodb <br>
+viii) luamongodb library <br>
+ix) lua5.1 only from repo <br>
+x) luarocks<br>
+xi) rocks to be installed - lualogging, luasocket, luaposix, json4lua, stdlib , luasec<br>
+  make sure you have libssl already installed on the system before luasec <br>
+  install luasec with command "sudo luarocks install luasec OPENSSL_LIBDIR=/usr/lib/i386-linux-gnu/"<br>
+  install luabitop rock <br>
+  install luaposix rock <br>
+  install stdlib rock <br>
+  install lbase64 rock <br>
+  install lua-cjson rock<br>
+  install lpeg rock<br>
+xiv) install ceph file system on the machines with this command :<br>
+echo deb http://ceph.com/debian-cuttlefish/ $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/ceph.list<br>
+sudo apt-get update <br>
+sudo apt-get install ceph<br>
+
+
+not needed on the target machine since he already has a user in ldap:
+----------------------------------------------------------------------
+install lualdap library from luaforge kepler project
+Download lua-imlib2 from http://luaforge.net/frs/download.php/3042/lua-imlib2-0.1.tar.gz and build,copy the limlib2.so to /usr/local/lib/lua/5.1
+
+xii) install mongodb from source and copy the files in to relevant /usr/local/include and /usr/local/lib directories <br>
+xiii) compile mongodb lua driver from the git hub repository  copy the shared object to the /usr/local/lib/lua/5.1/ <br>
+xv) install gd  graphics library. <br>
+xvi) install lua-gd for lua bindings to gd library.<br>
+  issue make in the lua-gd library and then copy the gd.so to the /usr/local/lib/lua/5.1<br>
+xxi) download the mongodb c++ driver from - http://downloads.mongodb.org/cxx-driver/mongodb-linux-x86_64-v2.2-latest.tgz<br>
+  comment out the FILESYSTEM macro in the driver source to compile.<br>
+  change the C++ compiler to g++-4.7 by adding line "env.Replace(CXX='g++-4.7')" after "Environment" line.<br>
+
+iv) google gflags library <br>
+v) google glog logging library <br>
+vi) google webp library <br>
+vii) libcurl3 library.<br>
+
+
+
+<h2 id="c8">stock ubuntu 13.04 and installing gtk broadway:</h2>
+<hr>
+   <code>sudo apt-get install build-essential </code><br>
+   <code>sudo apt-get install pkg-config </code><br>
+   <code>sudo apt-get install glib-2.0 </code><br>
+   <code>sudo apt-get install libgtk-3.0 libgtk-3-dev </code><br>
+   <code>gtk-3.8 ; ./configure --enable-broadway-backend --enable-x11-backend ; make </code><br>
+
+   set the environment variable SAL_USE_VCLPLUGIN=gtk3 for libreoffice to use the gtk3 broadway backend.
+
+<h2 id="c9">starting virtual box vm headless mode:</h2>
+<hr>
+<code>sudo -H -u rk VBoxManage startvm btrfstestub1304  --type headless</code>
+
+<h2 id="c10">gotchas: </h2>
+<hr>
+add -fPIC to the mongo cxx driver to compile it for 64 bit.
+
+<h2 id="c11">setting up apt-repository on ubuntu:</h2>
+<hr>
+http://www.jejik.com/articles/2006/09/setting_up_and_managing_an_apt_repository_with_reprepro/
+http://joseph.ruscio.org/blog/2010/08/19/setting-up-an-apt-repository/
+
+<h2 id="c12">setting up a apache2 virtual site to host an apt-repository:</h2>
+<hr>
+http://www.foscode.com/apache-virtual-host-ubuntu/
+
+<h2 id="c13">redirecting iptables from 443 to 8080</h2>
+<hr>
+<code>sudo iptables -t nat -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-ports 8080</code>
+
+<h2 id="c14">disabling ssl in apache2 for using 443 by antkorp.</h2>
+<hr>
+<code>sudo a2dismod ssl; sudo a2dissite default-ssl; sudo service apache2 restart</code>
+
+<h2 id="c15">enabling ssl in apache2:</h2>
+<hr>
+<code>sudo a2enmod ssl</code><br>
+<code>sudo a2ensite default-ssl</code><br>
+<code>sudo /etc/init.d/apache2 restart</code><br>
+
+<h2 id="c16">compiling ceph on ubuntu :</h2>
+<hr>
+<code>
+  <ul>
+<li>sudo apt-get install uuid-dev&nbsp;</li>
+<li>sudo apt-get install libuuid1</li>
+<li>sudo apt-get install libkeyutils-dev&nbsp;</li>
+<li>sudo apt-get install libnss3-dev&nbsp;</li>
+<li>sudo apt-get install libedit-dev&nbsp;</li>
+<li>sudo apt-get install libsnappy-dev&nbsp;</li>
+<li>sudo apt-get install libleveldb-dev&nbsp;</li>
+<li>sudo apt-get install libaio-dev&nbsp;</li>
+<li>./configure --without-fuse --without-tcmalloc --without-libatomic-ops make ;</li>
+</ul>
+</code>
+<h2 id="c17">rsync command to copy the files with extended attributes:</h2>
+<hr>
+<code>sudo rsync -razvXe "ssh" --delete --progress --stats /opt/antkorp/homes root@192.168.1.100:/opt/antkorp/</code><br>
+<br><br>
+<b>libreoffice build flags:</b><br>
+<pre>
+ ./autogen.sh --build=x86_64-linux-gnu --host=x86_64-linux-gnu  --target=x86_64-linux-gnu  --enable-gtk3 --with-system-libs --without-java --without-doxygen --without-system-libebook --without-system-libetonyek --without-system-libfreehand --without-system-libodfgen --without-system-libmwaw  --without-system-libcmis --without-system-libabw --without-system-firebird --without-system-mdds --without-system-graphite --without-system-orcus --without-system-lpsolve --disable-gstreamer-0-10 --without-system-boost ﻿--disable-dbus --disable-gconf --with-parallelism
+</pre>
+
+<h2 id="c18">Compiling libreoffice 4.0 series:</h2>
+<hr>
+<pre>
+./autogen.sh CC=clang CXX=clang++ --build=x86_64-linux-gnu --host=x86_64-linux-gnu  --target=x86_64-linux-gnu  --enable-gtk3 --without-system-libs --without-java --without-doxygen  --without-system-libcmis --without-system-mdds --without-system-graphite --without-system-orcus --without-system-lpsolve --disable-gstreamer-0-10 --without-system-boost --disable-dbus --disable-gconf --disable-cups --without-system-libxml --with-system-cairo --with-boost-date-time  --with-boost-system --disable-python   --with-parallelism --without-helppack-integration --without-myspell-dicts
+</pre>
+<br><br><br>
+<b>Compiling 3.5.7.2</b><br>
+<pre>
+./autogen.sh --build=x86_64-linux-gnu --host=x86_64-linux-gnu  --target=x86_64-linux-gnu  --enable-gtk3 --without-system-libs --without-java --without-doxygen  --without-system-libcmis --without-system-mdds --without-system-graphite --without-system-orcus --without-system-lpsolve --disable-gstreamer --without-system-boost --disable-dbus --disable-gconf --disable-cups --without-system-libxml --with-system-cairo --with-boost-date-time  --with-boost-system --disable-python   --with-parallelism --without-helppack-integration --without-myspell-dicts --without-system-openssl --disable-mozilla --disable-odk --disable-mathmldtd --disable-neon --enable-icecream --disable-nsplugin --disable-postgresql-sdbc --disable-ldap
+</pre>
+  </div>
+</div>
+
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+
+    <style type="text/css">
+        body { padding-top: 50px;
+                background-color: #efefef;
+         }
+         html,body,.row-fluid,#instruct-content{
+          height: 100%;
+         }
+         #instruct-content{
+          position: relative;
+          overflow: auto;
+         }
+         a.list-group-item {
+          padding-top: 5px;
+          padding-bottom: 5px;
+          border-top-width: 0px;
+          color:#318F9E;
+        }
+        a.list-group-item:hover{
+          text-decoration: underline;
+          color:#318F9E;
+        }
+    </style>
+  </body>
+</html>
