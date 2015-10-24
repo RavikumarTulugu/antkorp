@@ -12,8 +12,6 @@
 Description	"antkorp network gw daemon"
 After=syslog.target
 After=network.target
-Requires=antkorp 
-Conflicts=antkorp 
 
 [Service]
 Type=forking

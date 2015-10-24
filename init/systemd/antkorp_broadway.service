@@ -8,49 +8,30 @@
 # * distribution, in whole or in part, is forbidden except by express 
 # * written permission of Neptunium.
 # ****************************************************************/
+[Unit]
+Description	"antkorp network gw daemon"
+After=syslog.target network.target antkorp_ngw
+Requires=antkorp_ngw 
 
-description	"gtk broadway daemon"
-author 		"antkorp corporation"
-version 	"1.0"
+[Service]
+Type=forking
+Environment="LUA_PATH=/opt/antkorp/foreign/lua/5.1/?.lua;/opt/antkorp/custom/lua/?.lua;/usr/local/share/lua/5.1/?.lua"
+Environment="LUA_CPATH=/opt/antkorp/custom/lib/?.so;/opt/antkorp/foreign/lib/?.so;/usr/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so;/opt/antkorp/foreign/lib/lua/5.1/?.so"
+Environment="LD_LIBRARY_PATH=/usr/local/lib:/opt/antkorp/custom/lib/:/opt/antkorp/foreign/lib/"
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/opt/antkorp/foreign/bin/:/opt/antkorp/custom/bin:/opt/antkorp/foreign/lua/:/opt/antkorp/custom/lua"
+Environment="ANTKORP_DEBUG=false"
+Restart=on-failure
+RestartSec=5
+User=antkorp 
+Group=antkorp 
+TimeoutStopSec=30
+StandardOutput=null 
+StandardError=null
+ExecStart=/bin/sh -ec 'echo antkorp network gateway server starting up.'
+ExecStart='/opt/antkorp/custom/bin/akorp_broadway >>/var/log/antkorp/startup.log 2>&1'
+ExecStartPre=/bin/sh -ec 'logger -t gw: antkorp network gw daemon starting...'
+ExecStartPost=/bin/sh -ec 'logger -t gw: antkorp network gw daemon started successfully.'
+ExecStopPost=/bin/sh -ec 'logger -t gw: antkorp network gw daemon stopped.'
 
-start on ( started antkorp_fmgr and started antkorp )
-stop on ( stopped antkorp_fmgr or stopped antkorp )
-
-env LUA_PATH="/opt/antkorp/foreign/lua/5.1/?.lua;/opt/antkorp/custom/lua/?.lua;/usr/local/share/lua/5.1/?.lua"
-env LUA_CPATH="/opt/antkorp/custom/lib/?.so;/opt/antkorp/foreign/lib/?.so;/opt/antkorp/foreign/lib/lua/5.1/?.so;/usr/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/?.so"
-env SAL_USE_VCLPLUGIN=gtk3
-env GDK_BACKEND=broadway
-env BROADWAY_DISPLAY=:2
-env XDG_RUNTIME_DIR=/tmp
-
-expect fork
-respawn
-respawn limit 5 30
-setuid antkorp 
-setgid antkorp 
-kill timeout 30
-console none
-
-limit core unlimited unlimited
-limit nofile 4096 4096
-pre-start script
-logger -t "fmgr:" "gtk broadway daemon starting...";
-end script
-
-script 
-    exec >>/var/log/antkorp/startup.log 2>&1;
-    echo "gtk broadway daemon starting up.";
-    exec /opt/antkorp/foreign/bin/broadwayd :2 >>/var/log/antkorp/startup.log 2>&1;
-end script 
-
-post-start script 
-logger -t "fmgr:" "gtk broadway daemon started successfully.";
-end script
-
-pre-stop script 
-logger -t "fmgr:" "gtk broadway daemon stopping ...";
-end script 
-
-post-stop script 
-logger -t "fmgr:" "gtk broadway daemon stopped.";
-end script
+[Install]
+WantedBy=multi-user.target
