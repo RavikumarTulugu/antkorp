@@ -7,6 +7,7 @@
 
 #install required packages from ubuntu repository 
 sudo apt-get -y install dialog
+sudo apt-get -y install autoconf
 sudo apt-get -y install build-essential
 sudo apt-get -y install fakeroot 
 sudo apt-get -y install devscripts
@@ -23,31 +24,32 @@ sudo apt-get -y install libimlib2
 sudo apt-get -y install libimlib2-dev
 sudo apt-get -y install libjpeg62
 sudo apt-get -y install libjpeg62-dev 
-sudo apt-get -y install libreoffice-gtk3
+#sudo apt-get -y install libreoffice-gtk3
 sudo apt-get -y install mongodb
 sudo apt-get -y install apache2
 sudo apt-get -y install reprepo
-sudo apt-get -y install libpango1.0-dev
-sudo apt-get -y install libgdk-pixbuf2.0-dev
-sudo apt-get -y install xorg-dev
+#sudo apt-get -y install libpango1.0-dev
+#sudo apt-get -y install libgdk-pixbuf2.0-dev
+#sudo apt-get -y install xorg-dev
 sudo apt-get -y install conntrack
-sudo apt-get -y install libatk1.0-dev 
-sudo apt-get -y install libatk-bridge2.0-dev
-sudo apt-get -y install glib-2.0 
-sudo apt-get -y install glib-2.0-dev
-sudo apt-get -y install libcairo2-dev 
-sudo apt-get -y install libgtk-3.0 
-sudo apt-get -y install libgtk-3-dev
+#sudo apt-get -y install libatk1.0-dev 
+#sudo apt-get -y install libatk-bridge2.0-dev
+#sudo apt-get -y install glib-2.0 
+#sudo apt-get -y install glib-2.0-dev
+#sudo apt-get -y install libcairo2-dev 
+#sudo apt-get -y install libgtk-3.0 
+#sudo apt-get -y install libgtk-3-dev
 sudo apt-get -y install npm
 sudo apt-get -y install libgd2-xpm
 sudo apt-get -y install libgd2-xpm-dev
 sudo apt-get -y install flex
 sudo apt-get -y install bison
 sudo apt-get -y install gawk
-sudo apt-get -y install gobject-introspection
-sudo apt-get -y install libgirepository1.0-dev
+#sudo apt-get -y install gobject-introspection
+#sudo apt-get -y install libgirepository1.0-dev
 sudo apt-get -y install ruby
 sudo apt-get -y install clang
+sudo apt-get -y install libldap2-dev
 
 
 #sudo apt-get -y install 389-ds
