@@ -9,8 +9,10 @@
 #*written permission of Neptunium.
 #****************************************************************/
 
-CC=g++-5
-LD=g++-5
+#CC=g++-5
+#LD=g++-5
+CC=clang++-3.6
+LD=clang++-3.6
 #CC=clang++ -fsanitize=address -fno-omit-frame-pointer -fsanitize=thread
 #LD=clang++ -fsanitize=address -fsanitize=thread
 LIBAKORP=libakorp.so
@@ -127,7 +129,7 @@ JSON_LIB_OBJ= $(OBJ)/internalJSONNode.o  \
 
 akorp_stuff: akorp_lib akorp_fmgr akorp_ngw luabridge luacal akorp_simple clntsim clientmodule fattr akorp_broadway_tunneld
 
-3rdparty: mongo_cpp_driver luamongo lualdap lua-gd jq  jemalloc snappy leveldb
+3rdparty: mongo_cpp_driver luamongo lualdap lua-gd jq  snappy leveldb
 
 all: 3rdparty akorp_stuff 
 
@@ -152,8 +154,8 @@ jq:
 
 jemalloc:
 	echo -e "Building jemalloc needs autoreconf and configure every time.";
-	cd ../../3party/jemalloc-3.4.1/; autoreconf;./configure; cd -;
-	make -C ../../3party/jemalloc-3.4.1/ -f ../../3party/jemalloc-3.4.1/Makefile 
+	cd ../../3party/jemalloc-4.0.4/; autoreconf;./configure; cd -;
+	make -C ../../3party/jemalloc-4.0.4/ -f ../../3party/jemalloc-4.0.4/Makefile 
 
 broadwayd:
 	make -C ../../3party/gtk+-3.12.1/ -f ../../3party/gtk+-3.12.1/Makefile 
@@ -233,6 +235,6 @@ clean:
 	make -C ../../3party/lualdap-1.1.0/ -f ../../3party/lualdap-1.1.0/Makefile clean;
 	make -C ../../3party/gtk+-3.12.1/ -f ../../3party/gtk+-3.12.1/Makefile clean;
 	make -C ../../3party/lua-gd/ -f ../../3party/lua-gd/Makefile  clean;
-	make -C ../../3party/jemalloc-3.4.1/ -f ../../3party/jemalloc-3.4.1/Makefile clean;
+	make -C ../../3party/jemalloc-4.0.4/ -f ../../3party/jemalloc-4.0.4/Makefile clean;
 	make -C ../../3party/snappy-1.1.2/ -f ../../3party/snappy-1.1.2/Makefile  clean;
 	make -C ../../3party/leveldb-1.15.0/ -f ../../3party/leveldb-1.15.0/Makefile  clean;
