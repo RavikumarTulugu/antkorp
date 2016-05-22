@@ -21,14 +21,14 @@ if [ -f "/etc/init/antkorp.conf" ]; then
 	fi
 else
 	#if there is antkorp already running no need to create the user again.
-	echo "Creating Neptunium user and group.";
-	useradd -M antkorp
+	echo "Creating Antkorp user and group.";
+	useradd -UM antkorp
 	rc=$?
 	if [[ $rc != 0 ]] ; then
 	    echo "creating antkorp user & group failed with:" $rc;
 	    exit $rc
 	fi
-	echo "Creating Neptunium home directory.";
+	echo "Creating Antkorp home directory.";
     mkdir -p /home/antkorp 
     chown -R antkorp:antkorp /home/antkorp
 fi

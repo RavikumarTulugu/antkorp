@@ -120,7 +120,7 @@ function is_ip_present_on_any_iface()
 function global_dialog() 
 { 
     tempfile=$(mktemp);
-	dialog --backtitle "" --no-ok --no-cancel --title "Neptunium global configuration" \
+	dialog --backtitle "" --no-ok --no-cancel --title "Antkorp global configuration" \
 	--form "\nPress Enter to return to previous menu." 20 70 16 \
 	"mongodb server ip: " 1 1 "$system_mongo_server_address" 1 25 50 50 \
 	2>$tempfile;
@@ -662,9 +662,9 @@ fi
 
 while [ $choice -lt 9 ]
 do
-dialog --no-ok --no-cancel --title "Neptunium platform configuration dialog" \
+dialog --no-ok --no-cancel --title "Antkorp platform configuration dialog" \
 --menu "Please enter the configuration for antkorp platform." 20 55 10 \
-1 "Neptunium platform global configuration." \
+1 "Antkorp platform global configuration." \
 2 "Network gateway configuration." \
 3 "Konversations service configuration." \
 4 "Realtime communication service configuration." \

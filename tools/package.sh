@@ -69,8 +69,9 @@ cp -R /usr/local/share/lua $dest_dir/opt/antkorp/foreign/
 cp $2/3party/lualdap-1.1.0/src/lualdap.so $dest_dir/opt/antkorp/foreign/lib/
 cp $2/3party/lua-gd/gd.so $dest_dir/opt/antkorp/foreign/lib/
 cp $2/3party/luamongo-master/mongo.so $dest_dir/opt/antkorp/foreign/lib/
-cp $2/3party/jemalloc-3.4.1/lib/libjemalloc.so.1 $dest_dir/opt/antkorp/foreign/lib/libjemalloc.so
+cp $2/3party/jemalloc-4.0.4/lib/libjemalloc.so.2 $dest_dir/opt/antkorp/foreign/lib/libjemalloc.so
 cp $2/3party/jq-1.3/jq $dest_dir/opt/antkorp/foreign/bin/
+cp $2/3party/leveldb-1.15.0/libleveldb.so.1.15 $dest_dir/opt/antkorp/foreign/lib/libleveldb.so.1
 
 #cp $2/3party/gtk+-3.12.1/gdk/broadway/broadwayd $dest_dir/opt/antkorp/foreign/bin/
 #cp $2/3party/gtk+-3.12.1/gtk/.libs/lt-gtk-query-immodules-3.0 $dest_dir/opt/antkorp/foreign/bin/
