@@ -29,7 +29,6 @@ STRIP=strip
 
 #Makefile to compile all the akorp daemons
 LIBS= -L/usr/local/lib \
-   		-L../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/sharedclient \
    		-L../../3party/mongo-cxx-driver-v2.4/ \
    		-L../../3party/snappy-1.1.2/.libs/ \
    		-L../../3party/leveldb-1.15.0/ \
@@ -62,9 +61,6 @@ INCLUDES= -I/usr/local/include/mongo  \
 			-I../../3party/dtl-1.18/ \
             -I../../3party/snappy-1.1.2/ \
             -I../../3party/leveldb-1.15.0/ \
-   			-I../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/ \
-   			-I../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/src/mongo \
-   			-I../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/src/ \
 			-I../../3party/mongo-cxx-driver-v2.4/ \
 			-I../../3party/mongo-cxx-driver-v2.4/src/mongo/ \
 			-I../../3party/mongo-cxx-driver-v2.4/src/ \
@@ -129,15 +125,14 @@ JSON_LIB_OBJ= $(OBJ)/internalJSONNode.o  \
 
 akorp_stuff: akorp_lib akorp_fmgr akorp_ngw luabridge luacal akorp_simple clntsim clientmodule fattr akorp_broadway_tunneld
 
-3rdparty: mongo_cpp_driver luamongo lualdap lua-gd jq  snappy leveldb
+3rdparty: mongo_cpp_driver luamongo lualdap lua-gd jq  snappy leveldb jemalloc
 
 all: 3rdparty akorp_stuff 
 
 prod: all
 
 mongo_cpp_driver:
-	#scons -C ../../3party/mongo-cxx-driver-v2.4/ -f ../../3party/mongo-cxx-driver-v2.4/SConstruct --config=force
-	scons -C ../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/ -f ../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/SConstruct --config=force --use-system-boost --disable-warnings-as-errors --sharedclient
+	scons -C ../../3party/mongo-cxx-driver-v2.4/ -f ../../3party/mongo-cxx-driver-v2.4/SConstruct --config=force
 
 luamongo: mongo_cpp_driver
 	make -C ../../3party/luamongo-master/ -f ../../3party/luamongo-master/Makefile
@@ -154,7 +149,7 @@ jq:
 
 jemalloc:
 	echo -e "Building jemalloc needs autoreconf and configure every time.";
-	cd ../../3party/jemalloc-4.0.4/; autoreconf;./configure; cd -;
+	cd ../../3party/jemalloc-4.0.4/; ./autogen.sh ;./configure; cd -;
 	make -C ../../3party/jemalloc-4.0.4/ -f ../../3party/jemalloc-4.0.4/Makefile 
 
 broadwayd:
@@ -226,15 +221,14 @@ fattr: fattr.cc
 
 
 clean:
-	#scons -C ../../3party/mongo-cxx-driver-v2.4/ -f ../../3party/mongo-cxx-driver-v2.4/SConstruct -c
-	scons -C ../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/ -f ../../3party/mongo-cxx-driver-legacy-0.0-26compat-2.6.11/SConstruct -c --use-system-boost --disable-warnings-as-errors 
+	scons -C ../../3party/mongo-cxx-driver-v2.4/ -f ../../3party/mongo-cxx-driver-v2.4/SConstruct -c
 	make -C ../../3party/luamongo-master/ -f ../../3party/luamongo-master/Makefile clean;
 	rm -rf $(OBJ)
 	rm -rf *.o *.so *.a
 	make -C ../../3party/jq-1.3/ -f ../../3party/jq-1.3/Makefile clean;
 	make -C ../../3party/lualdap-1.1.0/ -f ../../3party/lualdap-1.1.0/Makefile clean;
-	make -C ../../3party/gtk+-3.12.1/ -f ../../3party/gtk+-3.12.1/Makefile clean;
 	make -C ../../3party/lua-gd/ -f ../../3party/lua-gd/Makefile  clean;
 	make -C ../../3party/jemalloc-4.0.4/ -f ../../3party/jemalloc-4.0.4/Makefile clean;
 	make -C ../../3party/snappy-1.1.2/ -f ../../3party/snappy-1.1.2/Makefile  clean;
 	make -C ../../3party/leveldb-1.15.0/ -f ../../3party/leveldb-1.15.0/Makefile  clean;
+	make -C ../../3party/gtk+-3.12.1/ -f ../../3party/gtk+-3.12.1/Makefile clean;

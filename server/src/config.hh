@@ -13,8 +13,8 @@
 #define __INC_CONFIG_H__
 
 #include <string>
-#include <property_tree/ptree.hpp>
-#include <property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
 void
 loadConfig(std::string);

@@ -50,7 +50,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <semaphore.h>
-#include <variant.hpp>
+#include <boost/variant.hpp>
 #include <boost/regex.hpp>
 #include <boost/interprocess/sync/named_mutex.hpp>
 #include <boost/lexical_cast.hpp>
