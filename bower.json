@@ -1,0 +1,9 @@
+{
+  "name": "antkorp",
+  "version": "1.0.0",
+  "dependancies": {
+    "jquery": "latest",
+    "bootstrap": "latest",
+    "font-awesome": "latest"
+  }
+}
