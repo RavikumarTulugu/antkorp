@@ -1,3 +1,2 @@
-make -f server/Makefile
-
-
+all:
+	make -f "server/Makefile"

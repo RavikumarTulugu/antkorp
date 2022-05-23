@@ -1,4 +1,2 @@
-
-make -f src/Makefile
-
-
+all:
+	make -f	"server/src/Makefile"
